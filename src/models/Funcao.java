@@ -23,5 +23,22 @@ public class Funcao {
         this.parametros = new ArrayList<>();
         this.linhaDeclaracao = linha;
     }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public String getTipoRetorno() {
+        return tipoRetorno;
+    }
+
+    public List<Parametro> getParametros() {
+        return parametros;
+    }
+
+    public int getLinhaDeclaracao() {
+        return linhaDeclaracao;
+    }
+    
     
 }

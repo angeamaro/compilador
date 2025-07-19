@@ -40,7 +40,7 @@ public abstract class AParser {
 
     protected abstract void declaracao() throws IOException;
 
-    protected abstract void especificador_tipo() throws IOException;
+    protected abstract String especificador_tipo() throws IOException;
 
     protected abstract void atribuicao() throws IOException;
 

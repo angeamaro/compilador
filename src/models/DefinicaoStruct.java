@@ -4,32 +4,30 @@
  */
 package models;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  *
  * @author itsupport
  */
-public class Parametro {
-    String nome;
-    String tipo;
-    boolean isPonteiro;
-    
-    public Parametro(String nome, String tipo, boolean isPonteiro) {
+public class DefinicaoStruct {
+    private String nome;
+    private Map<String, String> campos = new HashMap<>(); // Nome do campo -> Tipo
+
+    public DefinicaoStruct(String nome) {
         this.nome = nome;
-        this.tipo = tipo;
-        this.isPonteiro = isPonteiro;
     }
 
     public String getNome() {
         return nome;
     }
 
-    public String getTipo() {
-        return tipo;
-    }
-
-    public boolean isIsPonteiro() {
-        return isPonteiro;
+    public Map<String, String> getCampos() {
+        return campos;
     }
     
+    
+
     
 }

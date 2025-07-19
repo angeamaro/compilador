@@ -18,7 +18,7 @@ void saudacao(struct Pessoa *p) {
 
 // Função com ponteiro e double
 double multiplica(double *a, double b) {
-    return (*a) * b;
+    return (*a) * b ;
 }
 
 // função usando vários tipos
@@ -30,21 +30,22 @@ void mostrarPessoa(struct Pessoa p) {
     printf("Código: %d\n", p.codigo);
 }
 
-/* Função que soma dois inteiros
+/* Função que soma dois inteiros */
 int soma(int a, int b) {
     return a + b;
 }
 
 // Declaração de variaveis globais
 int x = 0;
-char nome[50];*/
+char nomeGlobal[50];
 
 int main() {	
 	int x;
+	int a = 2;
 	x = 3 + 2 * 5 + a;
 	if (x) 
 	{
-		printf(x);
+		printf("%d", x);
 	}
 	while (x) {
 		x = x - 1;
@@ -52,36 +53,37 @@ int main() {
 			
 // Programa exemplo com tudo
 
-	int x;
+	int y_int;
 	float y;
 	x = 10;
-	y = 3.5;a += a ;
+	y = 3.5;
+	a += a;
 		
 	if (x > 5) {
-		printf(x);
+		printf("%d", x);
 	} else {
-		printf(y);
+		printf("%.2f", y);
 	}
 		
 	while (x != 0) {
 		x = x - 1;
-	// contando para baixo
+		// contando para baixo
 	}
 	// declaração com inicialização
-	int a = 5;
-	float b = 3.2;
+	int b = 5;
+	float c = 3.2;
 	// atribuição
-	b = b + 2;
+	c = c + 2;
 	// condicional
-	if (a > 3) {
-		printf("Valor de a: %d", a);
+	if (b > 3) {
+		printf("Valor de a: %d", b);
 	} else{
 		printf("Outro valor");
 	}
 		
 	// repetição
-	while (a > 0) {
-		a -= 3;
+	while (b > 0) {
+		b -= 3;
 	}
 		
 	while (x < 100) {
@@ -91,33 +93,34 @@ int main() {
         }
     }
 
+	int i;
     // Testando continue
-    for (int i = 0; i < 5; i += a ) {
+    for (i = 0; i < 5; i += a ) {
         if (i == 2) {
         	 continue;
 		}
         printf("i = %d\n", i);
     }
 		    
-	int a = 5, b, c = 2;
-	float x = 1.5, y;
+	int d = 5, e, f = 2;
+	float u = 1.5, v1;
 	char letra = 'z';
 	
 	// expressão com variáveis
-	b = a + c;
-	y = x * 2.0;
+	e = d + f;
+	v1 = u * 2.0;
 	
 	// operadores lógicos e relacionais
-	if ((a > 3 && b < 10) || !(c == 0)) {
-	    printf("Entrou no if: %d", b);	
+	if ((d > 3 && e < 10) || !(f == 0)) {
+	    printf("Entrou no if: %d", e);	
 	}
 	
 	// scanf (leitura)
-	scanf("%d", &a);
+	scanf("%d", &d);
 	
 	// for
-	for (c = 0; c < 10; c = c + 1) {
-	    printf("Contador: %d", c);
+	for (f = 0; f < 10; f = f + 1) {
+	    printf("Contador: %d", f);
 	}
 	    
 	const int limite = 10;
@@ -125,7 +128,7 @@ int main() {
 
     resultado = soma(3, 4);
     printf("Resultado: %d", resultado);
-    int x = 5;
+    x = 5;
 	do {
     	printf("%d\n", x);
     	x = x - 1;
@@ -149,9 +152,9 @@ int main() {
     v[0] = 1;
     v[1] = 2;
 
-	int v[0];
+	int w[1];
     // operador ternário
-    int x = (resultado > 5) ? 100 : 0;
+    x = (resultado > 5) ? 100 : 0;
 
     /* Comentário
        em várias linhas
@@ -159,11 +162,4 @@ int main() {
 		
 	return 0;
 }
-
-/*		
-int soma(int a, int b) {
-    return a + b;
-}
-*/	
-
 

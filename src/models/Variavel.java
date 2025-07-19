@@ -22,4 +22,26 @@ public class Variavel {
         this.isArray = isArray;
         this.linhaDeclaracao = linha;
     }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+
+    public boolean isIsPonteiro() {
+        return isPonteiro;
+    }
+
+    public boolean isIsArray() {
+        return isArray;
+    }
+
+    public int getLinhaDeclaracao() {
+        return linhaDeclaracao;
+    }
+    
+    
 }
