@@ -1,4 +1,4 @@
-package analisador;
+package analyzer;
 
 import Tokens.*;
 import abstracts.AAnalex;

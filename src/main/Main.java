@@ -4,8 +4,9 @@
  */
 package main;
 
+import analyzer.Parser;
+import analyzer.Analex;
 import Tokens.TabelaDeTokens;
-import analisador.*;
 import Tokens.Token;
 import java.io.IOException;
 

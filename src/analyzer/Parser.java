@@ -1,9 +1,10 @@
-package analisador;
+package analyzer;
 
 import Tokens.*;
 import java.io.IOException;
 import java.util.List;
 import abstracts.AParser;
+import models.*;
 
 public class Parser extends AParser {
 
@@ -12,6 +13,7 @@ public class Parser extends AParser {
     protected TabelaDeTokens tabela;
     protected int countErros = 0;
     protected List<Token> tokens;
+    private Escopo escopos = new Escopo();
 
     public Parser(TabelaDeTokens tabela) {
         if (tabela == null) {
@@ -76,10 +78,12 @@ public class Parser extends AParser {
 
     @Override
     public void parse() throws IOException {
+        escopos.abrirEscopo(); // Escopo global
         programa();
         if (!tokenAtual.getTipo().equals("EOF")) {
             erro("Tokens restantes inesperados");
         }
+        escopos.fecharEscopo();
     }
 
     // -------------------REGRAS DA GRAMÁTICA ---------------------//
@@ -106,6 +110,7 @@ public class Parser extends AParser {
                 if (pos + 2 < tokens.size()
                         && (tokens.get(pos + 1).getTipo().equals("IDENTIFIER") || tokens.get(pos + 1).getTipo().equals("MAIN"))
                         && tokens.get(pos + 2).getTipo().equals("LPAREN")) {
+                    
                     declaracao_funcao();
                 } else {
                     declaracao();
