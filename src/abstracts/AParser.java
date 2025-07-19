@@ -25,6 +25,8 @@ public abstract class AParser {
 
     // ===== Regras gramaticais =====
     public abstract void programa() throws IOException;
+    
+    protected abstract void declaracao_struct() throws IOException;
 
     protected abstract void declaracao_funcao() throws IOException;
 
@@ -38,7 +40,7 @@ public abstract class AParser {
 
     protected abstract void declaracao() throws IOException;
 
-    protected abstract void tipo() throws IOException;
+    protected abstract void especificador_tipo() throws IOException;
 
     protected abstract void atribuicao() throws IOException;
 
@@ -75,8 +77,14 @@ public abstract class AParser {
     protected abstract void scanf_cmd() throws IOException;
 
     protected abstract void fator() throws IOException;
+    
+    protected abstract void elemento() throws IOException;
 
     protected abstract void expressao_logica() throws IOException;
 
     protected abstract void expressao_relacional() throws IOException;
+    
+    protected abstract void ponteiro () throws IOException;
+    
+    protected abstract void acesso_array() throws IOException; 
 }

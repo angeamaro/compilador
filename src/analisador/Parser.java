@@ -14,13 +14,26 @@ public class Parser extends AParser {
     protected List<Token> tokens;
 
     public Parser(TabelaDeTokens tabela) {
+        if (tabela == null) {
+            throw new IllegalArgumentException("TabelaDeTokens não pode ser nula");
+        }
+
         this.tabela = tabela;
         this.tokens = tabela.getTokens();
-        if (tokens != null && !tokens.isEmpty()) {
+
+        if (tokens == null) {
+            throw new IllegalArgumentException("Lista de tokens não pode ser nula");
+        }
+
+        if (!tokens.isEmpty()) {
             this.tokenAtual = tokens.get(0);
         } else {
             this.tokenAtual = new Token("EOF", "Fim de Arquivo", -1, -1);
         }
+    }
+
+    public int getCountErros() {
+        return countErros;
     }
 
     @Override
@@ -50,52 +63,104 @@ public class Parser extends AParser {
     }
 
     @Override
-    protected void sincronizar() throws IOException {
+    protected void sincronizar() {
         while (!tokenAtual.getTipo().equals("SEMICOLON")
                 && !tokenAtual.getTipo().equals("RBRACE")
                 && !tokenAtual.getTipo().equals("EOF")) {
             avancar();
         }
-        avancar(); // Consome o token de sincronização
-    }
+        if (!tokenAtual.getTipo().equals("EOF")) {
+            avancar();
+        }
+    }    // Entrada do programa
 
-    // Entrada do programa
     @Override
     public void parse() throws IOException {
         programa();
         if (!tokenAtual.getTipo().equals("EOF")) {
             erro("Tokens restantes inesperados");
         }
-        System.out.println("Análise concluída. Total de erros: " + countErros);
     }
 
     // -------------------REGRAS DA GRAMÁTICA ---------------------//
-    
-    // <programa> ::= { ( declaracao_funcao | declaracao ) }*
+    // <programa> ::= { ( declaracao_funcao | declaracao | declaracao_struct | diretiva ) }*
     @Override
     public void programa() throws IOException {
-        // Nova regra: { declaracao_funcao } funcao_main
-        while (tokenAtual.getTipo().equals("INT")
-                || tokenAtual.getTipo().equals("FLOAT")
-                || tokenAtual.getTipo().equals("CHAR")
-                || tokenAtual.getTipo().equals("VOID")) {
+        while (!tokenAtual.getTipo().equals("EOF")) {
+            if (tokenAtual.getTipo().equals("STRUCT")) {
+                declaracao_struct();
+            } else if (tokenAtual.getTipo().equals("DIRECTIVE")) {
+                consumir("DIRECTIVE");
+            } else if (tokenAtual.getTipo().equals("CONST")
+                    || tokenAtual.getTipo().equals("VOID")
+                    || tokenAtual.getTipo().equals("CHAR")
+                    || tokenAtual.getTipo().equals("SHORT")
+                    || tokenAtual.getTipo().equals("INT")
+                    || tokenAtual.getTipo().equals("LONG")
+                    || tokenAtual.getTipo().equals("FLOAT")
+                    || tokenAtual.getTipo().equals("DOUBLE")
+                    || tokenAtual.getTipo().equals("SIGNED")
+                    || tokenAtual.getTipo().equals("UNSIGNED")) {
 
-            if ((tokens.get(pos + 1).getTipo().equals("IDENTIFIER") || (tokens.get(pos + 1).getTipo().equals("MAIN")))
-                    && tokens.get(pos + 2).getTipo().equals("LPAREN")) {
-                declaracao_funcao();
+                // Verifica se é função ou declaração
+                if (pos + 2 < tokens.size()
+                        && (tokens.get(pos + 1).getTipo().equals("IDENTIFIER") || tokens.get(pos + 1).getTipo().equals("MAIN"))
+                        && tokens.get(pos + 2).getTipo().equals("LPAREN")) {
+                    declaracao_funcao();
+                } else {
+                    declaracao();
+                }
             } else {
-                declaracao();
+                erro("Declaração inválida no escopo global");
+                avancar();
             }
-        }
-        if (!tokenAtual.getTipo().equals("EOF")) {
-            erro("Código após a função main não permitido");
         }
     }
 
-    // <declaracao_funcao> ::= <tipo> (IDENTIFIER | MAIN) '(' [ <parametros> ] ')' <bloco>
+    //<declaracao_struct> ::= STRUCT IDENTIFIER '{' { <tipo> IDENTIFIER ';' }* '}' ';'
+    @Override
+    protected void declaracao_struct() throws IOException {
+        consumir("STRUCT");
+        if (!consumir("IDENTIFIER")) {
+            erro("Esperado nome da struct");
+        }
+        if (!consumir("LBRACE")) {
+            erro("Esperado '{' após nome da struct");
+        }
+
+        while (tokenAtual.getTipo().matches("VOID|CHAR|SHORT|INT|LONG|FLOAT|DOUBLE|SIGNED|UNSIGNED|STRUCT")) {
+            especificador_tipo();
+            ponteiro(); // <--- Adicionado ponteiro
+            if (!consumir("IDENTIFIER")) {
+                erro("Esperado identificador do campo");
+            }
+
+            if (consumir("LBRACKET")) {
+                if (!tokenAtual.getTipo().equals("NUMBER") && !tokenAtual.getTipo().equals("IDENTIFIER")) {
+                    erro("Esperado tamanho do array");
+                }
+                avancar();
+                if (!consumir("RBRACKET")) {
+                    erro("Esperado ']' após tamanho do array");
+                }
+            }
+
+            if (!consumir("SEMICOLON")) {
+                erro("Esperado ';' após campo da struct");
+            }
+        }
+
+        if (!consumir("RBRACE")) {
+            erro("Esperado '}' após campos da struct");
+        }
+        consumir("SEMICOLON");
+    }
+
+    // <declaracao_funcao> ::= <especificador_tipo> (IDENTIFIER | MAIN) '(' [ <parametros> ] ')' <bloco>
     @Override
     protected void declaracao_funcao() throws IOException {
-        tipo();
+        especificador_tipo();
+        ponteiro(); // <--- Adicionado ponteiro
         if (!consumir("IDENTIFIER") && !consumir("MAIN")) {
             erro("Esperado nome da função");
         }
@@ -111,11 +176,12 @@ public class Parser extends AParser {
         bloco();
     }
 
-    // <parametros> ::= <tipo> IDENTIFIER (',' <tipo> IDENTIFIER)*
+    // <parametros> ::= <especificador_tipo> IDENTIFIER (',' <especificador_tipo> IDENTIFIER)*
     @Override
     protected void parametros() throws IOException {
         do {
-            tipo();
+            especificador_tipo();
+            ponteiro(); // <--- Adicionado ponteiro
             if (!consumir("IDENTIFIER")) {
                 erro("Esperado identificador do parâmetro");
             }
@@ -128,9 +194,16 @@ public class Parser extends AParser {
     @Override
     protected void comando() throws IOException {
         if (tokenAtual.getTipo().equals("CONST")
+                || tokenAtual.getTipo().equals("VOID")
+                || tokenAtual.getTipo().equals("CHAR")
+                || tokenAtual.getTipo().equals("SHORT")
                 || tokenAtual.getTipo().equals("INT")
+                || tokenAtual.getTipo().equals("LONG")
                 || tokenAtual.getTipo().equals("FLOAT")
-                || tokenAtual.getTipo().equals("CHAR")) {
+                || tokenAtual.getTipo().equals("DOUBLE")
+                || tokenAtual.getTipo().equals("SIGNED")
+                || tokenAtual.getTipo().equals("UNSIGNED")
+                || tokenAtual.getTipo().equals("STRUCT")) {
             declaracao();
         } else if (tokenAtual.getTipo().equals("IF")) {
             if_cmd();
@@ -171,15 +244,12 @@ public class Parser extends AParser {
         }
     }
 
-    // <declaracao> ::= [CONST] <tipo> <lista_identificadores> ';'
+    // <declaracao> ::= [CONST] <especificador_tipo> <lista_identificadores> ';'
     @Override
     protected void declaracao() throws IOException {
         boolean isConst = consumir("CONST");
-        if (isConst) {
-            tipo();
-        } else {
-            tipo();
-        }
+        especificador_tipo();
+        ponteiro(); // <--- Adicionado ponteiro
         lista_identificadores();
         if (!consumir("SEMICOLON")) {
             erro("Esperado ';' após declaração");
@@ -242,7 +312,7 @@ public class Parser extends AParser {
     @Override
     protected void expressao_relacional() throws IOException {
         expressao_aritmetica();
-        if (eOperadorRelacional()) {
+        while (eOperadorRelacional()) {
             avancar();
             expressao_aritmetica();
         }
@@ -306,7 +376,10 @@ public class Parser extends AParser {
         if (!consumir("LPAREN")) {
             erro("Esperado '(' após for");
         }
-        if (consumir("INT") || consumir("DOUBLE") || consumir("CHAR")) {
+        // Adicionado suporte para tipo com ponteiro
+        if (tokenAtual.getTipo().matches("INT|FLOAT|DOUBLE|CHAR|VOID|STRUCT")) {
+            especificador_tipo();
+            ponteiro();
         }
         atribuicao();  // Inicialização
         expressao();    // Condição
@@ -323,18 +396,17 @@ public class Parser extends AParser {
     // <printf_cmd> ::= PRINTF '(' (STRING | IDENTIFIER) (',' <expressao>)* ')' ';'
     @Override
     protected void printf_cmd() throws IOException {
-        consumir("IDENTIFIER");
+        consumir("IDENTIFIER"); // "printf"
         if (!consumir("LPAREN")) {
             erro("Esperado '(' após printf");
         }
-        // Consome a string de formato
-        if (!tokenAtual.getTipo().equals("STRING") && !tokenAtual.getTipo().equals("IDENTIFIER")) {
-            erro("Esperado string ou identificador em printf");
-        }
-        avancar();
-        // Consome variáveis se houver
+
+        // Primeiro argumento pode ser qualquer expressão
+        expressao();
+
+        // Argumentos adicionais
         while (consumir("COMMA")) {
-            expressao(); // Pode ser identificador ou expressão mais complexa
+            expressao();
         }
 
         if (!consumir("RPAREN")) {
@@ -453,23 +525,57 @@ public class Parser extends AParser {
     // <atribuicao> ::= IDENTIFIER ('[' <expressao> ']')? '=' <expressao> ';'
     @Override
     protected void atribuicao() throws IOException {
-        // Aceita identificador ou acesso a array
-        consumir("IDENTIFIER");
+        // Verifica se é incremento/decremento pré-fixo (++x ou --x)
+        boolean isPrefix = false;
+        if (tokenAtual.getTipo().equals("INCREMENT") || tokenAtual.getTipo().equals("DECREMENT")) {
+            isPrefix = true;
+            avancar(); // Consome o operador (++ ou --)
+        }
 
-        // Verifica se é acesso a array (ex: v[0])
+        // Identificador (variável ou array)
+        if (!consumir("IDENTIFIER")) {
+            erro("Esperado identificador");
+        }
+
+        // Verifica se é acesso a array (ex: v[0] = ...)
         if (consumir("LBRACKET")) {
-            expressao(); // Índice do array
+            expressao();
             if (!consumir("RBRACKET")) {
                 erro("Esperado ']' após índice do array");
             }
         }
 
-        if (!consumir("ASSIGN")) {
-            erro("Esperado '=' após identificador");
-        }
-        expressao();
-        if (!consumir("SEMICOLON")) {
-            erro("Esperado ';' após expressão");
+        // Verifica operadores de atribuição
+        if (isPrefix) {
+            // Já consumimos o operador pré-fixo, só precisa do ponto e vírgula
+            if (!consumir("SEMICOLON")) {
+                erro("Esperado ';' após incremento/decremento");
+            }
+        } else if (tokenAtual.getTipo().equals("ASSIGN")
+                || tokenAtual.getTipo().equals("ADD_ASSIGN")
+                || tokenAtual.getTipo().equals("SUB_ASSIGN")
+                || tokenAtual.getTipo().equals("MUL_ASSIGN")
+                || tokenAtual.getTipo().equals("DIV_ASSIGN")) {
+
+            avancar(); // Consome o operador de atribuição
+
+            // Para operadores compostos, precisa de expressão
+            if (!tokenAtual.getTipo().equals("INCREMENT")
+                    && !tokenAtual.getTipo().equals("DECREMENT")) {
+                expressao();
+            }
+
+            if (!consumir("SEMICOLON")) {
+                erro("Esperado ';' após expressão");
+            }
+        } // Verifica incremento/decremento pós-fixo (x++ ou x--)
+        else if (tokenAtual.getTipo().equals("INCREMENT") || tokenAtual.getTipo().equals("DECREMENT")) {
+            avancar(); // Consome o operador (++ ou --)
+            if (!consumir("SEMICOLON")) {
+                erro("Esperado ';' após incremento/decremento");
+            }
+        } else {
+            erro("Esperado operador de atribuição após identificador");
         }
     }
 
@@ -496,10 +602,23 @@ public class Parser extends AParser {
         } while (consumir("COMMA"));
     }
 
-    // <tipo> ::= INT | FLOAT | CHAR
+    // Nova regra: <especificador_tipo> ::= VOID | CHAR | SHORT | INT | LONG | FLOAT | DOUBLE | SIGNED | UNSIGNED | STRUCT IDENTIFIER
     @Override
-    protected void tipo() throws IOException {
-        if (!consumir("INT") && !consumir("FLOAT") && !consumir("CHAR")) {
+    protected void especificador_tipo() throws IOException {
+        boolean hasType = false;
+        while (tokenAtual.getTipo().matches("VOID|CHAR|SHORT|INT|LONG|FLOAT|DOUBLE|SIGNED|UNSIGNED|STRUCT")) {
+            hasType = true;
+            if (tokenAtual.getTipo().equals("STRUCT")) {
+                consumir("STRUCT");
+                if (!consumir("IDENTIFIER")) {
+                    erro("Esperado nome da struct após 'struct'");
+                }
+                break;
+            } else {
+                avancar();
+            }
+        }
+        if (!hasType) {
             erro("Tipo inválido");
         }
     }
@@ -540,24 +659,15 @@ public class Parser extends AParser {
         consumir("IDENTIFIER");
 
         if (consumir("ASSIGN")) {
-            expressao(); // para casos como: a = b + 2
-            return;
-        }
-
-        if (consumir("INCREMENT") || consumir("DECREMENT")) {
-            return; // para casos como: a++ ou a--
-        }
-
-        if (consumir("ADD_ASSIGN") || consumir("SUB_ASSIGN")
+            expressao(); // aceita qualquer expressão
+        } else if (consumir("INCREMENT") || consumir("DECREMENT")) {
+            // Não precisa de expressão (a++ ou a--)
+        } else if (consumir("ADD_ASSIGN") || consumir("SUB_ASSIGN")
                 || consumir("MUL_ASSIGN") || consumir("DIV_ASSIGN")) {
-
-            if (!(consumir("NUMBER") || consumir("NUMBER_FLOAT") || consumir("IDENTIFIER"))) {
-                erro("Esperado número ou identificador após operador composto de atribuição");
-            }
-            return;
+            expressao(); // aceita qualquer expressão após operador composto
+        } else {
+            erro("Esperado operador de atribuição após identificador");
         }
-
-        erro("Esperado operador de atribuição após identificador");
     }
 
     /* <fator> ::= NUMBER | IDENTIFIER | CHAR 
@@ -565,13 +675,41 @@ public class Parser extends AParser {
                 | '!' <fator> | <chamada_funcao>*/
     @Override
     protected void fator() throws IOException {
-        if (consumir("NOT")) {
-            fator();
+        elemento();
+
+        // Tratamento de arrays após o elemento básico
+        if (tokenAtual.getTipo().equals("LBRACKET")) {
+            consumir("LBRACKET");
+            expressao();
+            if (!consumir("RBRACKET")) {
+                erro("Esperado ']' após índice do array");
+            }
+        }
+    }
+
+    // Adicione este novo método à classe
+    @Override
+    protected void elemento() throws IOException {
+        // Adicionar tratamento para operadores unários: *, &, !, -
+        if (consumir("MULTIPLY") || consumir("BITWISE_AND") || consumir("NOT") || consumir("MINUS")) {
+            elemento(); // Operador unário
         } else if (tokenAtual.getTipo().equals("IDENTIFIER")
+                && tokens.size() > pos + 1
                 && tokens.get(pos + 1).getTipo().equals("LPAREN")) {
             chamada_funcao();
+        } else if (tokenAtual.getTipo().equals("IDENTIFIER")) {
+            consumir("IDENTIFIER");
+            // Verificar acessos (. ou ->) após identificador
+            while (tokenAtual.getTipo().equals("DOT") || tokenAtual.getTipo().equals("ARROW")) {
+                avancar(); // Consome . ou ->
+                if (!consumir("IDENTIFIER")) {
+                    erro("Esperado identificador após acesso");
+                }
+            }
+        } // Aceitar strings como elementos válidos
+        else if (tokenAtual.getTipo().equals("STRING")) {
+            avancar();
         } else if (tokenAtual.getTipo().equals("NUMBER")
-                || tokenAtual.getTipo().equals("IDENTIFIER")
                 || tokenAtual.getTipo().equals("CHAR")
                 || tokenAtual.getTipo().equals("NUMBER_FLOAT")) {
             avancar();
@@ -580,8 +718,27 @@ public class Parser extends AParser {
             if (!consumir("RPAREN")) {
                 erro("Esperado ')' após expressão");
             }
+        } else if (consumir("INCREMENT") || consumir("DECREMENT")) {
+            // Operadores de incremento/decremento
         } else {
-            erro("Fator inválido");
+            erro("Elemento inválido: " + tokenAtual.getValor());
+        }
+    }
+
+// Novo método para acesso a array
+    protected void acesso_array() throws IOException {
+        consumir("IDENTIFIER");
+        consumir("LBRACKET");
+        expressao();
+        if (!consumir("RBRACKET")) {
+            erro("Esperado ']' após índice do array");
+        }
+    }
+
+    @Override
+    protected void ponteiro() throws IOException {
+        while (consumir("MULTIPLY")) {
+            // Consome múltiplos '*' (ex: int **ptr)
         }
     }
 

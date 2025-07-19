@@ -33,11 +33,14 @@ public class TokenPalavrasReservadas extends Token {
 
         // Qualificadores
         palavrasReservadas.put("const", "CONST");
+        palavrasReservadas.put("unsigned", "UNSIGNED");
+        palavrasReservadas.put("signed", "SIGNED");
         palavrasReservadas.put("static", "STATIC");
         palavrasReservadas.put("extern", "EXTERN");
         palavrasReservadas.put("volatile", "VOLATILE");
         palavrasReservadas.put("register", "REGISTER");
         palavrasReservadas.put("inline", "INLINE");
+        palavrasReservadas.put("short", "SHORT");
 
         // Outros
         palavrasReservadas.put("main", "MAIN");

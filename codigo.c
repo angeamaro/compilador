@@ -1,11 +1,43 @@
-// Função que soma dois inteiros
+#include <stdio.h>
+#include <stdlib.h>
+
+
+struct Pessoa {
+    char nome[50];
+    unsigned int idade;
+    float altura;
+    double peso;
+    signed short int codigo;
+};
+
+
+// Função que não retorna nada
+void saudacao(struct Pessoa *p) {
+    printf("Olá, %s. Você tem %d anos.\n", p->nome, p->idade);
+}
+
+// Função com ponteiro e double
+double multiplica(double *a, double b) {
+    return (*a) * b;
+}
+
+// função usando vários tipos
+void mostrarPessoa(struct Pessoa p) {
+    printf("Nome: %s\n", p.nome);
+    printf("Idade: %u\n", p.idade);
+    printf("Altura: %.2f\n", p.altura);
+    printf("Peso: %.2lf\n", p.peso);
+    printf("Código: %d\n", p.codigo);
+}
+
+/* Função que soma dois inteiros
 int soma(int a, int b) {
     return a + b;
 }
 
 // Declaração de variaveis globais
 int x = 0;
-char nome[50];
+char nome[50];*/
 
 int main() {	
 	int x;
@@ -19,11 +51,11 @@ int main() {
 	}
 			
 // Programa exemplo com tudo
-		
+
 	int x;
 	float y;
 	x = 10;
-	y = 3.5;a = b;
+	y = 3.5;a += a ;
 		
 	if (x > 5) {
 		printf(x);
@@ -43,13 +75,13 @@ int main() {
 	// condicional
 	if (a > 3) {
 		printf("Valor de a: %d", a);
-	} else {
+	} else{
 		printf("Outro valor");
 	}
 		
 	// repetição
 	while (a > 0) {
-		a = a - 1;
+		a -= 3;
 	}
 		
 	while (x < 100) {
@@ -127,10 +159,11 @@ int main() {
 		
 	return 0;
 }
-		
+
+/*		
 int soma(int a, int b) {
     return a + b;
 }
-		
+*/	
 
 

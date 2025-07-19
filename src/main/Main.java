@@ -4,6 +4,7 @@
  */
 package main;
 
+import Tokens.TabelaDeTokens;
 import analisador.*;
 import Tokens.Token;
 import java.io.IOException;
@@ -21,19 +22,22 @@ public class Main {
         // TODO code application logic here
 
         String caminhoFicheiro = "codigo.c";
-        /*Analisador parser = new Analisador(analex);
-        parser.parseProgram();*/
-
-        System.out.println("\n\n\n");
-
         try {
             Analex analex = new Analex(caminhoFicheiro);
-            //analex.analisarCodigo().imprimirTokens();
-            Parser parser = new Parser(analex.analisarCodigo());
+            TabelaDeTokens tabela = analex.analisarCodigo();
+
+            /* Verifique se os tokens foram gerados
+            System.out.println("Total de tokens: " + tabela.getTokens().size());
+            tabela.imprimirTokens();   Se você tiver esse método */
+
+            Parser parser = new Parser(tabela);
             parser.parse();
-        } catch (IOException e) {
-            System.out.println("Erro ao ler o ficheiro: " + e.getMessage());
+            System.out.println("Análise concluída. Total de erros: " + parser.getCountErros());
+        } catch (Exception e) {
+            System.err.println("Erro fatal: " + e.getMessage());
+            e.printStackTrace();
         }
+
     }
 
 }
