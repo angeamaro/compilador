@@ -45,6 +45,20 @@ public class Escopo {
         }
         return null; // Variável não encontrada
     }
+    
+     public void adicionarStruct(String nome, Struct struct) {
+        if (definicoesStruct.containsKey(nome)) {
+            System.err.println("Erro Semântico: Struct '" + nome + "' já declarada");
+        } else {
+            definicoesStruct.put(nome, struct);
+            tiposStruct.put(nome, "struct " + nome); // Register struct type
+        }
+    }
+
+    public Struct buscarStruct(String nome) {
+        return definicoesStruct.get(nome);
+    }
+
 
     public void adicionarFuncao(String nome, Funcao func) {
         if (funcoes.containsKey(nome)) {

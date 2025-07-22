@@ -59,7 +59,7 @@ public abstract class AParser {
 
     protected abstract void switch_cmd() throws IOException;
 
-    protected abstract void lista_identificadores() throws IOException;
+    protected abstract void lista_identificadores(String tipo) throws IOException;
 
     protected abstract void expressao_aritmetica() throws IOException;
 
@@ -89,5 +89,5 @@ public abstract class AParser {
     
     protected abstract void ponteiro () throws IOException;
     
-    protected abstract void acesso_array() throws IOException; 
+    //protected abstract void acesso_array() throws IOException; 
 }

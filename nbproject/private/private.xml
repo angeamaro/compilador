@@ -6,8 +6,10 @@
             <file>file:/C:/Users/itsupport/Documents/NetBeansProjects/compilador/src/models/Escopo.java</file>
             <file>file:/C:/Users/itsupport/Documents/NetBeansProjects/compilador/src/utils/Ficheiro.java</file>
             <file>file:/C:/Users/itsupport/Documents/NetBeansProjects/compilador/src/analyzer/Parser.java</file>
-            <file>file:/C:/Users/itsupport/Documents/NetBeansProjects/compilador/src/models/DefinicaoStruct.java</file>
+            <file>file:/C:/Users/itsupport/Documents/NetBeansProjects/compilador/src/Tokens/TokenSimbolos.java</file>
+            <file>file:/C:/Users/itsupport/Documents/NetBeansProjects/compilador/src/models/Struct.java</file>
             <file>file:/C:/Users/itsupport/Documents/NetBeansProjects/compilador/src/abstracts/AParser.java</file>
+            <file>file:/C:/Users/itsupport/Documents/NetBeansProjects/compilador/src/models/Funcao.java</file>
             <file>file:/C:/Users/itsupport/Documents/NetBeansProjects/compilador/src/models/Parametro.java</file>
         </group>
     </open-files>

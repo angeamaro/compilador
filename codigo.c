@@ -4,15 +4,16 @@
 
 struct Pessoa {
     char nome[50];
-    unsigned int idade;
+    int idade;
     float altura;
-    double peso;
-    signed short int codigo;
+    float peso;
+    int codigo;
 };
 
 // Função que não retorna nada
 void saudacao(struct Pessoa *p) {
-    printf("Olá, %s. Você tem %d anos.\n", p->nome, p->idade);
+	p->idade = 1;
+    printf("Olá, %s. Você tem %d anos.\n", p->nome, p->idade, p->co);
 }
 
 // Função com ponteiro e double
@@ -24,22 +25,30 @@ double multiplica(double *a, double b) {
 void mostrarPessoa(struct Pessoa p) {
     printf("Nome: %s\n", p.nome);
     printf("Idade: %u\n", p.idade);
-    printf("Altura: %.2f\n", p->altura);
+    printf("Altura: %.2f\n", p.altura);
     printf("Peso: %.2lf\n", p.peso);
     printf("Código: %d\n", p.codigo);
-    printf("Código: %d\n", p.co);
 }
 
 /* Função que soma dois inteiros */
 int soma(int a, int b) {
+	int t1;
     return a ;
 }
 
 // Declaração de variaveis globais
 
 char nomeGlobal[50];
+int t1;
 
-int main() {	
+int main() {
+	
+	struct Pessoa p1;
+	p1.idade = 25;                         // unsigned int
+    p1.altura = 1.65;                     // float
+    p1.peso = 58.75;                       // double
+    p1.codigo = -123;  
+	int t1;	
 	int x;
 	int a = 3;
 	x = 3 + 2 * 5 + a;
@@ -151,7 +160,7 @@ int main() {
     // array
     int v[5];
     v[0] = 1;
-    v[1] = 2;
+    v[3] = 2;
 
 	int w[1];
     // operador ternário
