@@ -13,7 +13,7 @@ struct Pessoa {
 // Função que não retorna nada
 void saudacao(struct Pessoa *p) {
 	p->idade = 1;
-    printf("Olá, %s. Você tem %d anos.\n", p->nome, p->idade, p->co);
+    printf("Olá, %s. Você tem %d anos.\n", p->nome, p->idade);
 }
 
 // Função com ponteiro e double
@@ -23,7 +23,7 @@ double multiplica(double *a, double b) {
 
 // função usando vários tipos
 void mostrarPessoa(struct Pessoa p) {
-    printf("Nome: %s\n", p.nome);
+    printf("Nome: %s\n");
     printf("Idade: %u\n", p.idade);
     printf("Altura: %.2f\n", p.altura);
     printf("Peso: %.2lf\n", p.peso);
