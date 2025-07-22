@@ -10,33 +10,32 @@ struct Pessoa {
     int codigo;
 };
 
-// Função que não retorna nada
+// Funï¿½ï¿½o que nï¿½o retorna nada
 void saudacao(struct Pessoa *p) {
 	p->idade = 1;
-    printf("Olá, %s. Você tem %d anos.\n" ,p->nome, p->idade);
+    printf("Olï¿½, %s. Vocï¿½ tem %d anos.\n" ,p->nome, p->idade);
 }
 
-// Função com ponteiro e double
+// Funï¿½ï¿½o com ponteiro e double
 double multiplica(double *a, double b) {
     return (*a) * b ;
 }
 
-// função usando vários tipos
+// funï¿½ï¿½o usando vï¿½rios tipos
 void mostrarPessoa(struct Pessoa p) {
-    printf("Nome: %s\n");
+    printf("Nome: %s\n", "teste");
     printf("Idade: %u\n", p.idade);
     printf("Altura: %.2f\n", p.altura);
     printf("Peso: %.2lf\n", p.peso);
-    printf("Código: %d\n", p.codigo);
+    printf("Cï¿½digo: %d\n", p.codigo);
 }
 
-/* Função que soma dois inteiros */
+/* Funï¿½ï¿½o que soma dois inteiros */
 int soma(int a, int b) {
-	int t1;
     return a + b;
 }
 
-// Declaração de variaveis globais
+// Declaraï¿½ï¿½o de variaveis globais
 
 char nomeGlobal[50];
 int t1;
@@ -44,9 +43,9 @@ int t1;
 int main() {
 	
 	struct Pessoa p1;
-	p1.idade = 25;                         // unsigned int
-    p1.altura = 1.65;                     // float
-    p1.peso = 58.75;                       // double
+	p1.idade = 25;              // unsigned int
+    p1.altura = 1.65;           // float
+    p1.peso = 58.75;            // double
     p1.codigo = -123;  
     
     mostrarPessoa(p1);
@@ -83,10 +82,10 @@ int main() {
 	
 		// contando para baixo
 	}
-	// declaração com inicialização
+	// declaraï¿½ï¿½o com inicializaï¿½ï¿½o
 	int b = 5;
 	float c = 3.2;
-	// atribuição
+	// atribuiï¿½ï¿½o
 	c = c + 2;
 	// condicional
 	if (b > 3) {
@@ -95,7 +94,7 @@ int main() {
 		printf("Outro valor\n");
 	}
 		
-	// repetição
+	// repetiï¿½ï¿½o
 	while (b > 0) {
 		b -= 3;
 	}
@@ -120,11 +119,11 @@ int main() {
 	float u = 1.5, v1;
 	char letra = 'z';
 	
-	// expressão com variáveis
+	// expressï¿½o com variï¿½veis
 	e = d + f;
 	v1 = u * 2.0;
 	
-	// operadores lógicos e relacionais
+	// operadores lï¿½gicos e relacionais
 	if ((d > 3 && e < 10) || !(f == 0)) {
 	    printf("Entrou no if: %d\n", e);	
 	}
@@ -151,13 +150,13 @@ int main() {
 	int opcao = 2;
 	switch (opcao) {
     	case 1:
-        	printf("Opção 1\n");
+        	printf("Opï¿½ï¿½o 1\n");
         	break;
     	case 2:
-        	printf("Opção 2\n");
+        	printf("Opï¿½ï¿½o 2\n");
         	break;
     	default:
-        	printf("Outra opção\n");
+        	printf("Outra opï¿½ï¿½o\n");
 	}
 	char nome[50];
 	
@@ -165,13 +164,12 @@ int main() {
     int v[5];
     v[0] = 1;
     v[3] = 2;
-
 	int w[1];
-    // operador ternário
+    // operador ternï¿½rio
     x = (resultado > 5) ? 100 : 0;
 
-    /* Comentário
-       em várias linhas
+    /* Comentï¿½rio
+       em vï¿½rias linhas
     */
 		
 	return 0;

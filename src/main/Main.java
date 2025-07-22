@@ -20,8 +20,9 @@ public class Main {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws Exception {
-        String caminhoFicheiro = "codigo.c";
-        String ficheiroSaida = "codigo.exe"; 
+        
+        String caminhoFicheiro = (args.length > 0 && !args[0].isEmpty()) ? args[0] : "codigo.c";
+        String ficheiroSaida   = (args.length > 1 && !args[1].isEmpty()) ? args[1] : "codigo.exe";
 
         try {
             long inicio = System.nanoTime();
