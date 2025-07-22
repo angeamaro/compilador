@@ -4,6 +4,7 @@ import Tokens.*;
 import java.io.IOException;
 import java.util.List;
 import abstracts.AParser;
+import java.util.ArrayList;
 import models.*;
 
 public class Parser extends AParser {
@@ -61,7 +62,9 @@ public class Parser extends AParser {
 
     @Override
     protected void erro(String msg) throws IOException {
-        System.err.println("Erro: " + msg + " na linha " + tokenAtual.getLinha() + " encontrado " + tokenAtual.getValor());
+        System.err.println("Erro: " + msg + " encontrado " + tokenAtual.getValor()
+                + " [Linha: " + tokenAtual.getLinha()
+                + ", Coluna: " + tokenAtual.getColuna() + "]");
         countErros++;
         sincronizar();
     }
@@ -187,57 +190,82 @@ public class Parser extends AParser {
             return;
         }
 
-        // Registra função
+        // Create Funcao object (will populate parameters later)
         Funcao funcao = new Funcao(nomeFuncao, tipoRetorno, tokenAtual.getLinha());
-        escopos.adicionarFuncao(nomeFuncao, funcao);
 
-        // Prepara para verificação de return
+        // Prepare for return verification
         funcaoAtual = nomeFuncao;
         tipoRetornoAtual = tipoRetorno;
 
         if (!consumir("LPAREN")) {
             erro("Esperado '(' após nome da função");
+            return;
         }
 
-        // Abre escopo para parâmetros
+        // Open scope for parameters
         escopos.abrirEscopo();
 
+        // Parse parameters and collect them
+        List<Parametro> parametros = new ArrayList<>();
         if (!tokenAtual.getTipo().equals("RPAREN")) {
-            parametros();
+            parametros = parametros();
         }
         if (!consumir("RPAREN")) {
             erro("Esperado ')' após parâmetros");
+            escopos.fecharEscopo();
+            funcaoAtual = null;
+            tipoRetornoAtual = null;
+            return;
         }
 
+        // Store parameters in Funcao object
+        funcao.getParametros().addAll(parametros);
+
+        // Register function with collected parameters
+        escopos.adicionarFuncao(nomeFuncao, funcao);
+
+        // Parse function body
         bloco();
 
-        // Fecha escopo de parâmetros
+        // Close parameter scope
         escopos.fecharEscopo();
 
-        // Reseta verificação de return
+        // Reset return verification
         funcaoAtual = null;
         tipoRetornoAtual = null;
     }
 
-    // <parametros> ::= <especificador_tipo> IDENTIFIER (',' <especificador_tipo> IDENTIFIER)*
     @Override
-    protected void parametros() throws IOException {
+    protected List<Parametro> parametros() throws IOException {
+        List<Parametro> parametros = new ArrayList<>();
         do {
             String tipoParam = especificador_tipo();
-            ponteiro();
+            StringBuilder tipoCompleto = new StringBuilder(tipoParam);
+            boolean isPonteiro = false;
+
+            // Handle pointers
+            while (consumir("MULTIPLY")) {
+                tipoCompleto.append("*");
+                isPonteiro = true; // Set flag if any pointer is detected
+            }
 
             if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
                 erro("Esperado identificador do parâmetro");
-                return;
+                return parametros;
             }
             String nomeParam = tokenAtual.getValor();
             avancar();
 
-            // Registra parâmetro como variável
-            Variavel var = new Variavel(nomeParam, tipoParam, false, false, tokenAtual.getLinha());
+            // Create and store parameter
+            Parametro param = new Parametro(nomeParam, tipoCompleto.toString(), isPonteiro);
+            parametros.add(param);
+
+            // Register parameter as variable in scope
+            Variavel var = new Variavel(nomeParam, tipoCompleto.toString(), false, false, tokenAtual.getLinha());
             escopos.adicionarVariavel(nomeParam, var);
 
         } while (consumir("COMMA"));
+        return parametros;
     }
 
     /*<comando> ::= <declaracao> | <atribuicao> | <if_cmd> | <while_cmd> 
@@ -842,38 +870,62 @@ public class Parser extends AParser {
     // Adicione este novo método à classe
     @Override
     protected void elemento() throws IOException {
-        // Adicionar tratamento para operadores unários: *, &, !, -
-        if (consumir("MULTIPLY") || consumir("BITWISE_AND") || consumir("NOT") || consumir("MINUS")) {
-            elemento(); // Operador unário
-        } else if (tokenAtual.getTipo().equals("IDENTIFIER")
-                && tokens.size() > pos + 1
+        // Handle unary operators: *, &, !, -, ++ (pre), -- (pre)
+        if (consumir("MULTIPLY") || consumir("BITWISE_AND") || consumir("NOT") || consumir("MINUS")
+                || consumir("INCREMENT") || consumir("DECREMENT")) {
+            elemento(); // Recursive call for unary operator
+        } // Handle function calls
+        else if (tokenAtual.getTipo().equals("IDENTIFIER")
+                && pos + 1 < tokens.size()
                 && tokens.get(pos + 1).getTipo().equals("LPAREN")) {
             chamada_funcao();
-        } else if (tokenAtual.getTipo().equals("IDENTIFIER")) {
+        } // Handle identifiers
+        else if (tokenAtual.getTipo().equals("IDENTIFIER")) {
             consumir("IDENTIFIER");
-            // Verificar acessos (. ou ->) após identificador
-            while (tokenAtual.getTipo().equals("DOT") || tokenAtual.getTipo().equals("ARROW")) {
-                avancar(); // Consome . ou ->
-                if (!consumir("IDENTIFIER")) {
-                    erro("Esperado identificador após acesso");
-                }
-            }
-        } // Aceitar strings como elementos válidos
-        else if (tokenAtual.getTipo().equals("STRING")) {
-            avancar();
-        } else if (tokenAtual.getTipo().equals("NUMBER")
+        } // Handle literals: string, number, char, float
+        else if (tokenAtual.getTipo().equals("STRING")
+                || tokenAtual.getTipo().equals("NUMBER")
                 || tokenAtual.getTipo().equals("CHAR")
                 || tokenAtual.getTipo().equals("NUMBER_FLOAT")) {
             avancar();
-        } else if (consumir("LPAREN")) {
+        } // Handle parenthesized expressions
+        else if (consumir("LPAREN")) {
             expressao();
             if (!consumir("RPAREN")) {
                 erro("Esperado ')' após expressão");
+                return; // Exit to prevent further processing
             }
-        } else if (consumir("INCREMENT") || consumir("DECREMENT")) {
-            // Operadores de incremento/decremento
         } else {
-            erro("Elemento inválido: " + tokenAtual.getValor());
+            erro("Elemento inválido: " + (tokenAtual != null ? tokenAtual.getValor() : "null"));
+            if (tokenAtual != null) {
+                avancar(); // Advance to avoid infinite loop
+            }
+            return; // Exit to prevent further processing
+        }
+
+        // Handle post-expression accesses: ., ->, [], ++ (post), -- (post)
+        while (tokenAtual != null && (tokenAtual.getTipo().equals("DOT")
+                || tokenAtual.getTipo().equals("ARROW")
+                || tokenAtual.getTipo().equals("LBRACKET")
+                || tokenAtual.getTipo().equals("INCREMENT")
+                || tokenAtual.getTipo().equals("DECREMENT"))) {
+            if (tokenAtual.getTipo().equals("LBRACKET")) {
+                avancar(); // Consume '['
+                expressao(); // Parse array index
+                if (!consumir("RBRACKET")) {
+                    erro("Esperado ']' após índice do array");
+                    return; // Exit to prevent further processing
+                }
+            } else if (tokenAtual.getTipo().equals("DOT") || tokenAtual.getTipo().equals("ARROW")) {
+                avancar(); // Consume '.' or '->'
+                if (!consumir("IDENTIFIER")) {
+                    erro("Esperado identificador após acesso");
+                    return; // Exit to prevent further processing
+                }
+            } else {
+                // Post-increment/decrement
+                avancar(); // Consume ++ or --
+            }
         }
     }
 
@@ -949,6 +1001,10 @@ public class Parser extends AParser {
         return tipo;
     }
 
+    private boolean ehTipoBooleano(String tipo) {
+        return tipo.equals("int");
+    }
+
     private String verificarExpressaoAritmetica() throws IOException {
         String tipo = verificarTermo();
 
@@ -968,10 +1024,8 @@ public class Parser extends AParser {
     }
 
     private boolean ehTipoCondicionalValido(String tipo) {
-        return ehTipoBooleano(tipo) || ehTipoNumerico(tipo);
+        return ehTipoNumerico(tipo);
     }
-    
-    
 
     private String verificarTermo() throws IOException {
         String tipo = verificarFator();
@@ -1011,83 +1065,92 @@ public class Parser extends AParser {
     }
 
     private String verificarElemento() throws IOException {
-        if (consumir("MULTIPLY") || consumir("BITWISE_AND") || consumir("NOT") || consumir("MINUS")) {
-            String operador = tokenAtual.getTipo(); // Guarda o operador antes de avançar
-            avancar(); // Consome o operador
-
-            String tipoOperando = verificarElemento(); // Verifica o operando
+        // Handle unary operators: *, &, !, -, ++ (pre), -- (pre)
+        if (consumir("MULTIPLY") || consumir("BITWISE_AND") || consumir("NOT") || consumir("MINUS")
+                || consumir("INCREMENT") || consumir("DECREMENT")) {
+            String operador = tokens.get(pos - 1).getTipo(); // Get the consumed operator
+            String tipoOperando = verificarElemento(); // Recursive call for operand
 
             switch (operador) {
                 case "MULTIPLY":
-                    return obterTipoBasePonteiro(tipoOperando); // Dereferência
+                    return obterTipoBasePonteiro(tipoOperando); // Dereference
                 case "BITWISE_AND":
-                    return tipoOperando + "*"; // Endereço
+                    return tipoOperando + "*"; // Address-of
                 case "NOT":
                 case "MINUS":
-                    if (!ehTipoNumerico(tipoOperando) && !ehTipoBooleano(tipoOperando)) {
-                        erroSemantico("Operando unário inválido");
+                    if (!ehTipoNumerico(tipoOperando)) {
+                        erroSemantico("Operando unário inválido para " + operador);
+                    }
+                    return tipoOperando;
+                case "INCREMENT":
+                case "DECREMENT":
+                    if (!ehTipoNumerico(tipoOperando)) {
+                        erroSemantico("Operando de incremento/decremento deve ser numérico");
                     }
                     return tipoOperando;
                 default:
                     return tipoOperando;
             }
-        } else if (tokenAtual.getTipo().equals("IDENTIFIER")) {
+        } // Handle function calls
+        else if (tokenAtual.getTipo().equals("IDENTIFIER")
+                && pos + 1 < tokens.size()
+                && tokens.get(pos + 1).getTipo().equals("LPAREN")) {
+            String nomeFuncao = tokenAtual.getValor();
+            Funcao funcao = escopos.buscarFuncao(nomeFuncao);
+            chamada_funcao(); // Parse function call
+            if (funcao == null) {
+                erroSemantico("Função '" + nomeFuncao + "' não declarada");
+                return "desconhecido";
+            }
+            return funcao.getTipoRetorno(); // Return function's return type
+        } // Handle identifiers
+        else if (tokenAtual.getTipo().equals("IDENTIFIER")) {
             String nome = tokenAtual.getValor();
             Variavel var = escopos.buscarVariavel(nome);
-
             if (var == null) {
-                erroSemantico("Operando unário inválido");
+                erroSemantico("Variável '" + nome + "' não declarada");
                 avancar();
                 return "desconhecido";
             }
+            String tipo = var.getTipo();
+            avancar(); // Consume identifier
 
-            String tipo = var.getTipo(); // Inicializa tipo com o tipo da variável
-            avancar(); // Consome identificador
-
-            // Processa acessos a structs
+            // Process struct accesses (. or ->)
             while (tokenAtual != null
                     && (tokenAtual.getTipo().equals("DOT") || tokenAtual.getTipo().equals("ARROW"))) {
-
                 boolean isPointerAccess = tokenAtual.getTipo().equals("ARROW");
-                avancar(); // Consome . ou ->
-
+                avancar(); // Consume . or ->
                 if (tokenAtual == null || !tokenAtual.getTipo().equals("IDENTIFIER")) {
                     erro("Esperado identificador após acesso");
                     return "desconhecido";
                 }
-
                 String campo = tokenAtual.getValor();
-                avancar(); // Consome o identificador do campo
-
-                // Trata ponteiros (-> converte para acesso direto)
+                avancar(); // Consume field identifier
                 if (isPointerAccess) {
                     if (!tipo.endsWith("*")) {
                         erroSemantico("Acesso '->' em não-ponteiro");
                         tipo = "desconhecido";
                         continue;
                     }
-                    tipo = tipo.substring(0, tipo.length() - 1).trim(); // Remove o *
+                    tipo = tipo.substring(0, tipo.length() - 1).trim(); // Remove *
                 }
-
-                // Verifica se é struct
                 if (!tipo.startsWith("struct ")) {
                     erroSemantico("Acesso a campo em tipo não estruturado: " + tipo);
                     tipo = "desconhecido";
                     continue;
                 }
-
                 String nomeStruct = tipo.substring(7); // Remove "struct "
                 String tipoCampo = escopos.buscarTipoCampoStruct(nomeStruct, campo);
-
                 if (tipoCampo == null) {
                     erroSemantico("Struct '" + nomeStruct + "' não possui campo '" + campo + "'");
                     tipo = "desconhecido";
                 } else {
-                    tipo = tipoCampo; // Atualiza tipo para o tipo do campo
+                    tipo = tipoCampo; // Update type to field type
                 }
             }
             return tipo;
-        } else if (tokenAtual.getTipo().equals("STRING")) {
+        } // Handle literals
+        else if (tokenAtual.getTipo().equals("STRING")) {
             avancar();
             return "char*";
         } else if (tokenAtual.getTipo().equals("NUMBER")) {
@@ -1099,10 +1162,12 @@ public class Parser extends AParser {
         } else if (tokenAtual.getTipo().equals("CHAR")) {
             avancar();
             return "char";
-        } else if (consumir("LPAREN")) {
+        } // Handle parenthesized expressions
+        else if (consumir("LPAREN")) {
             String tipo = verificarExpressao();
             if (!consumir("RPAREN")) {
                 erro("Esperado ')' após expressão");
+                return "desconhecido";
             }
             return tipo;
         } else {
@@ -1112,15 +1177,13 @@ public class Parser extends AParser {
             }
             return "desconhecido";
         }
+
+        // Handle post-expression accesses: [], ++, --
     }
 
 // Métodos auxiliares
     private boolean ehTipoNumerico(String tipo) {
         return tipo.matches("char|short|int|long|float|double");
-    }
-
-    private boolean ehTipoBooleano(String tipo) {
-        return tipo.equals("bool");
     }
 
     private boolean tiposCompativeis(String tipo1, String tipo2) {

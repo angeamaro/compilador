@@ -4,7 +4,10 @@
  */
 package abstracts;
 
+import Tokens.*;
 import java.io.IOException;
+import java.util.List;
+import models.Parametro;
 
 /**
  *
@@ -30,7 +33,7 @@ public abstract class AParser {
 
     protected abstract void declaracao_funcao() throws IOException;
 
-    protected abstract void parametros() throws IOException;
+    protected abstract List<Parametro> parametros() throws IOException;
 
     protected abstract void comando() throws IOException;
 

@@ -16,7 +16,7 @@ public class Escopo {
     private Stack<HashMap<String, Variavel>> pilhaEscopos = new Stack<>();
     private HashMap<String, Funcao> funcoes = new HashMap<>();
     private HashMap<String, String> tiposStruct = new HashMap<>();
-    private HashMap<String, DefinicaoStruct> definicoesStruct = new HashMap<>();
+    private HashMap<String, Struct> definicoesStruct = new HashMap<>();
 
     public void abrirEscopo() {
         pilhaEscopos.push(new HashMap<>());
@@ -54,12 +54,12 @@ public class Escopo {
         }
     }
 
-    public void adicionarDefinicaoStruct(DefinicaoStruct def) {
+    public void adicionarDefinicaoStruct(Struct def) {
         definicoesStruct.put(def.getNome(), def);
     }
 
     public String buscarTipoCampoStruct(String nomeStruct, String nomeCampo) {
-        DefinicaoStruct def = definicoesStruct.get(nomeStruct);
+        Struct def = definicoesStruct.get(nomeStruct);
         if (def == null) {
             return null;
         }
@@ -90,7 +90,7 @@ public class Escopo {
         return tiposStruct;
     }
 
-    public HashMap<String, DefinicaoStruct> getDefinicoesStruct() {
+    public HashMap<String, Struct> getDefinicoesStruct() {
         return definicoesStruct;
     }
     

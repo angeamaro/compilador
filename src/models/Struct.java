@@ -11,11 +11,11 @@ import java.util.Map;
  *
  * @author itsupport
  */
-public class DefinicaoStruct {
+public class Struct {
     private String nome;
     private Map<String, String> campos = new HashMap<>(); // Nome do campo -> Tipo
 
-    public DefinicaoStruct(String nome) {
+    public Struct(String nome) {
         this.nome = nome;
     }
 

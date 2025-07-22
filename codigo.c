@@ -10,7 +10,6 @@ struct Pessoa {
     signed short int codigo;
 };
 
-
 // Função que não retorna nada
 void saudacao(struct Pessoa *p) {
     printf("Olá, %s. Você tem %d anos.\n", p->nome, p->idade);
@@ -25,23 +24,24 @@ double multiplica(double *a, double b) {
 void mostrarPessoa(struct Pessoa p) {
     printf("Nome: %s\n", p.nome);
     printf("Idade: %u\n", p.idade);
-    printf("Altura: %.2f\n", p.altura);
+    printf("Altura: %.2f\n", p->altura);
     printf("Peso: %.2lf\n", p.peso);
     printf("Código: %d\n", p.codigo);
+    printf("Código: %d\n", p.co);
 }
 
 /* Função que soma dois inteiros */
 int soma(int a, int b) {
-    return a + b;
+    return a ;
 }
 
 // Declaração de variaveis globais
-int x = 0;
+
 char nomeGlobal[50];
 
 int main() {	
 	int x;
-	int a = 2;
+	int a = 3;
 	x = 3 + 2 * 5 + a;
 	if (x) 
 	{
@@ -67,6 +67,7 @@ int main() {
 		
 	while (x != 0) {
 		x = x - 1;
+	
 		// contando para baixo
 	}
 	// declaração com inicialização
