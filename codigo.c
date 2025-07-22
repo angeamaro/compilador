@@ -48,13 +48,17 @@ int main() {
     p1.altura = 1.65;                     // float
     p1.peso = 58.75;                       // double
     p1.codigo = -123;  
+    
+    mostrarPessoa(p1);
+    saudacao(&p1);
+    
 	int t1;	
-	int x;
+	int x = 1;
 	int a = 3;
 	x = 3 + 2 * 5 + a;
 	if (x) 
 	{
-		printf("%d", x);
+		printf("%d\n", x);
 	}
 	while (x) {
 		x = x - 1;
@@ -69,9 +73,9 @@ int main() {
 	a += a;
 		
 	if (x > 5) {
-		printf("%d", x);
+		printf("%d\n", x);
 	} else {
-		printf("%.2f", y);
+		printf("%.2f\n", y);
 	}
 		
 	while (x != 0) {
@@ -86,9 +90,9 @@ int main() {
 	c = c + 2;
 	// condicional
 	if (b > 3) {
-		printf("Valor de a: %d", b);
+		printf("Valor de a: %d\n", b);
 	} else{
-		printf("Outro valor");
+		printf("Outro valor\n");
 	}
 		
 	// repetição
@@ -122,7 +126,7 @@ int main() {
 	
 	// operadores lógicos e relacionais
 	if ((d > 3 && e < 10) || !(f == 0)) {
-	    printf("Entrou no if: %d", e);	
+	    printf("Entrou no if: %d\n", e);	
 	}
 	
 	// scanf (leitura)
@@ -130,14 +134,14 @@ int main() {
 	
 	// for
 	for (f = 0; f < 10; f = f + 1) {
-	    printf("Contador: %d", f);
+	    printf("Contador: %d\n", f);
 	}
 	    
 	const int limite = 10;
     int resultado;
 
     resultado = soma(3, 4);
-    printf("Resultado: %d", resultado);
+    printf("Resultado: %d\n", resultado);
     x = 5;
 	do {
     	printf("%d\n", x);
@@ -147,13 +151,13 @@ int main() {
 	int opcao = 2;
 	switch (opcao) {
     	case 1:
-        	printf("Opção 1");
+        	printf("Opção 1\n");
         	break;
     	case 2:
-        	printf("Opção 2");
+        	printf("Opção 2\n");
         	break;
     	default:
-        	printf("Outra opção");
+        	printf("Outra opção\n");
 	}
 	char nome[50];
 	
