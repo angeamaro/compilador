@@ -13,7 +13,7 @@ struct Pessoa {
 // Função que não retorna nada
 void saudacao(struct Pessoa *p) {
 	p->idade = 1;
-    printf("Olá, %s. Você tem %d anos.\n", p->nome, p->idade);
+    printf("Olá, %s. Você tem %d anos.\n" ,p->nome, p->idade);
 }
 
 // Função com ponteiro e double
@@ -33,7 +33,7 @@ void mostrarPessoa(struct Pessoa p) {
 /* Função que soma dois inteiros */
 int soma(int a, int b) {
 	int t1;
-    return a ;
+    return a + b;
 }
 
 // Declaração de variaveis globais

@@ -16,25 +16,25 @@ public class Parser {
     protected int countErros = 0;
     protected List<Token> tokens;
     private Escopo escopos = new Escopo();
-    private String funcaoAtual = null; // Para verificação de return
-    private String tipoRetornoAtual = null; // Para verificação de return
+    private String funcaoAtual = null; // For return verification
+    private String tipoRetornoAtual = null; // For return verification
 
     public Parser(TabelaDeTokens tabela) {
         if (tabela == null) {
-            throw new IllegalArgumentException("TabelaDeTokens não pode ser nula");
+            throw new IllegalArgumentException("Token table cannot be null");
         }
 
         this.tabela = tabela;
         this.tokens = tabela.getTokens();
 
         if (tokens == null) {
-            throw new IllegalArgumentException("Lista de tokens não pode ser nula");
+            throw new IllegalArgumentException("Token list cannot be null");
         }
 
         if (!tokens.isEmpty()) {
             this.tokenAtual = tokens.get(0);
         } else {
-            this.tokenAtual = new Token("EOF", "Fim de Arquivo", -1, -1);
+            this.tokenAtual = new Token("EOF", "End of File", -1, -1);
         }
     }
 
@@ -42,7 +42,6 @@ public class Parser {
         return countErros;
     }
 
-    
     protected boolean consumir(String esperado) throws IOException {
         if (tokenAtual.getTipo().equals(esperado)) {
             avancar();
@@ -51,21 +50,19 @@ public class Parser {
         return false;
     }
 
-    
     protected void avancar() {
         pos++;
         if (pos < tokens.size()) {
             tokenAtual = tokens.get(pos);
         } else {
-            tokenAtual = new Token("EOF", "Fim de Arquivo", -1, -1);
+            tokenAtual = new Token("EOF", "End of File", -1, -1);
         }
     }
 
-    
     protected void erro(String msg) throws IOException {
-        System.err.println("Erro: " + msg + " encontrado " + tokenAtual.getValor()
-                + " [Linha: " + tokenAtual.getLinha()
-                + ", Coluna: " + tokenAtual.getColuna() + "]");
+        System.err.println("[Error] " + msg + " found '" + tokenAtual.getValor()
+                + "' at line " + tokenAtual.getLinha()
+                + ", column " + tokenAtual.getColuna());
         countErros++;
         sincronizar();
     }
@@ -73,11 +70,10 @@ public class Parser {
     private void erroSemantico(String mensagem) {
         int linha = tokenAtual != null ? tokenAtual.getLinha() : -1;
         int coluna = tokenAtual != null ? tokenAtual.getColuna() : -1;
-        System.err.println("Erro Semântico: " + mensagem + " [Linha: " + linha + ", Coluna: " + coluna + "]");
-        countErros++; // Incrementa também o contador geral de erros
+        System.err.println("[Semantic Error] " + mensagem + " at line " + linha + ", column " + coluna);
+        countErros++;
     }
 
-    
     protected void sincronizar() {
         while (!tokenAtual.getTipo().equals("SEMICOLON")
                 && !tokenAtual.getTipo().equals("RBRACE")
@@ -89,17 +85,15 @@ public class Parser {
         }
     }
 
-    
     public void parse() throws IOException {
-        escopos.abrirEscopo(); // Escopo global
+        escopos.abrirEscopo(); // Global scope
         programa();
         if (!tokenAtual.getTipo().equals("EOF")) {
-            erro("Tokens restantes inesperados");
+            erro("Unexpected tokens remaining");
         }
         escopos.fecharEscopo();
     }
 
-    
     public void programa() throws IOException {
         while (!tokenAtual.getTipo().equals("EOF")) {
             if (tokenAtual.getTipo().equals("STRUCT")) {
@@ -126,17 +120,16 @@ public class Parser {
                     declaracao();
                 }
             } else {
-                erro("Declaração inválida no escopo global");
+                erro("Invalid declaration in global scope");
                 avancar();
             }
         }
     }
 
-    
     protected void declaracao_struct() throws IOException {
         consumir("STRUCT");
         if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
-            erro("Esperado nome da struct");
+            erro("Expected struct name");
             sincronizar();
             return;
         }
@@ -144,7 +137,7 @@ public class Parser {
         avancar();
 
         if (escopos.buscarStruct(nomeStruct) != null) {
-            erroSemantico("Struct '" + nomeStruct + "' já declarada");
+            erroSemantico("Struct '" + nomeStruct + "' already declared");
             sincronizar();
             return;
         }
@@ -152,7 +145,7 @@ public class Parser {
         Struct struct = new Struct(nomeStruct);
 
         if (!consumir("LBRACE")) {
-            erro("Esperado '{' após nome da struct");
+            erro("Expected '{' after struct name");
             sincronizar();
             return;
         }
@@ -166,7 +159,7 @@ public class Parser {
             }
 
             if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
-                erro("Esperado identificador do campo");
+                erro("Expected field identifier");
                 sincronizar();
                 return;
             }
@@ -182,24 +175,24 @@ public class Parser {
                         try {
                             int tamanho = Integer.parseInt(valor);
                             if (tamanho <= 0) {
-                                erroSemantico("Tamanho do array deve ser positivo: " + valor);
+                                erroSemantico("Array size must be positive: " + valor);
                             }
                         } catch (NumberFormatException e) {
-                            erroSemantico("Tamanho do array inválido: " + valor);
+                            erroSemantico("Invalid array size: " + valor);
                         }
                         avancar();
                     } else if (tokenAtual.getTipo().equals("IDENTIFIER")) {
                         String nomeConstante = tokenAtual.getValor();
                         Variavel var = escopos.buscarVariavel(nomeConstante);
                         if (var == null || !var.getTipo().equals("int")) {
-                            erroSemantico("Constante '" + nomeConstante + "' não é um inteiro válido");
+                            erroSemantico("Constant '" + nomeConstante + "' is not a valid integer");
                         }
                         avancar();
                     } else {
-                        erro("Esperado tamanho do array (número ou identificador)");
+                        erro("Expected array size (number or identifier)");
                     }
                     if (!consumir("RBRACKET")) {
-                        erro("Esperado ']' após tamanho do array");
+                        erro("Expected ']' after array size");
                         sincronizar();
                         return;
                     }
@@ -210,36 +203,35 @@ public class Parser {
             }
 
             if (struct.getCampos().containsKey(nomeCampo)) {
-                erroSemantico("Campo '" + nomeCampo + "' já definido na struct '" + nomeStruct + "'");
+                erroSemantico("Field '" + nomeCampo + "' already defined in struct '" + nomeStruct + "'");
             } else {
                 if (!ehTipoValido(tipoCompleto.toString())) {
-                    erroSemantico("Tipo inválido para campo '" + nomeCampo + "': " + tipoCompleto);
+                    erroSemantico("Invalid type for field '" + nomeCampo + "': " + tipoCompleto);
                 } else {
                     struct.getCampos().put(nomeCampo, tipoCompleto.toString());
                 }
             }
 
             if (!consumir("SEMICOLON")) {
-                erro("Esperado ';' após campo da struct");
+                erro("Expected ';' after struct field");
                 sincronizar();
                 return;
             }
         }
 
         if (!consumir("RBRACE")) {
-            erro("Esperado '}' após campos da struct");
+            erro("Expected '}' after struct fields");
             sincronizar();
             return;
         }
         if (!consumir("SEMICOLON")) {
-            erro("Esperado ';' após declaração da struct");
+            erro("Expected ';' after struct declaration");
             sincronizar();
         }
 
         escopos.adicionarStruct(nomeStruct, struct);
     }
 
-    
     protected void declaracao_funcao() throws IOException {
         String tipoRetorno = especificador_tipo();
         ponteiro();
@@ -251,7 +243,7 @@ public class Parser {
         } else if (consumir("MAIN")) {
             nomeFuncao = "main";
         } else {
-            erro("Esperado nome da função");
+            erro("Expected function name");
             return;
         }
 
@@ -261,7 +253,7 @@ public class Parser {
         tipoRetornoAtual = tipoRetorno;
 
         if (!consumir("LPAREN")) {
-            erro("Esperado '(' após nome da função");
+            erro("Expected '(' after function name");
             return;
         }
 
@@ -272,7 +264,7 @@ public class Parser {
             parametros = parametros();
         }
         if (!consumir("RPAREN")) {
-            erro("Esperado ')' após parâmetros");
+            erro("Expected ')' after parameters");
             escopos.fecharEscopo();
             funcaoAtual = null;
             tipoRetornoAtual = null;
@@ -289,7 +281,6 @@ public class Parser {
         tipoRetornoAtual = null;
     }
 
-    
     protected List<Parametro> parametros() throws IOException {
         List<Parametro> parametros = new ArrayList<>();
         do {
@@ -303,7 +294,7 @@ public class Parser {
             }
 
             if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
-                erro("Esperado identificador do parâmetro");
+                erro("Expected parameter identifier");
                 return parametros;
             }
             String nomeParam = tokenAtual.getValor();
@@ -319,7 +310,6 @@ public class Parser {
         return parametros;
     }
 
-    
     protected void comando() throws IOException {
         if (tokenAtual.getTipo().equals("CONST")
                 || tokenAtual.getTipo().equals("VOID")
@@ -352,42 +342,40 @@ public class Parser {
         } else if (tokenAtual.getTipo().equals("BREAK")) {
             consumir("BREAK");
             if (!consumir("SEMICOLON")) {
-                erro("Esperado ';' após break");
+                erro("Expected ';' after 'break'");
             }
         } else if (tokenAtual.getTipo().equals("CONTINUE")) {
             consumir("CONTINUE");
             if (!consumir("SEMICOLON")) {
-                erro("Esperado ';' após continue");
+                erro("Expected ';' after 'continue'");
             }
         } else if (tokenAtual.getTipo().equals("IDENTIFIER")
                 && tokens.get(pos + 1).getTipo().equals("LPAREN")) {
             chamada_funcao();
             if (!consumir("SEMICOLON")) {
-                erro("Esperado ';' após chamada de função");
+                erro("Expected ';' after function call");
             }
         } else if (tokenAtual.getTipo().equals("IDENTIFIER")) {
             atribuicao();
         } else {
-            erro("Comando inválido");
+            erro("Invalid statement");
         }
     }
 
-    
     protected void declaracao() throws IOException {
         boolean isConst = consumir("CONST");
         String tipo = especificador_tipo();
         ponteiro();
         lista_identificadores(tipo);
         if (!consumir("SEMICOLON")) {
-            erro("Esperado ';' após declaração");
+            erro("Expected ';' after declaration");
         }
     }
 
-    
     protected void lista_identificadores(String tipo) throws IOException {
         do {
             if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
-                erro("Esperado identificador");
+                erro("Expected identifier");
                 return;
             }
 
@@ -398,11 +386,11 @@ public class Parser {
             if (consumir("LBRACKET")) {
                 isArray = true;
                 if (!tokenAtual.getTipo().equals("NUMBER") && !tokenAtual.getTipo().equals("IDENTIFIER")) {
-                    erro("Esperado tamanho do array");
+                    erro("Expected array size");
                 }
                 avancar();
                 if (!consumir("RBRACKET")) {
-                    erro("Esperado ']' após tamanho do array");
+                    erro("Expected ']' after array size");
                 }
             }
 
@@ -411,29 +399,26 @@ public class Parser {
 
             if (consumir("ASSIGN")) {
                 String tipoExpressao = verificarExpressao();
-                verificarCompatibilidadeTipos(tipo, tipoExpressao, "atribuição");
+                verificarCompatibilidadeTipos(tipo, tipoExpressao, "assignment");
             }
         } while (consumir("COMMA"));
     }
 
-    
     protected void expressao() throws IOException {
         expressao_ternaria();
     }
 
-    
     protected void expressao_ternaria() throws IOException {
         expressao_logica();
         if (consumir("QUESTION")) {
             expressao();
             if (!consumir("COLON")) {
-                erro("Esperado ':' no operador ternário");
+                erro("Expected ':' in ternary operator");
             }
             expressao();
         }
     }
 
-    
     protected void expressao_logica() throws IOException {
         expressao_relacional();
         while (tokenAtual.getTipo().equals("AND") || tokenAtual.getTipo().equals("OR")) {
@@ -442,7 +427,6 @@ public class Parser {
         }
     }
 
-    
     protected void expressao_relacional() throws IOException {
         expressao_aritmetica();
         while (eOperadorRelacional()) {
@@ -451,7 +435,6 @@ public class Parser {
         }
     }
 
-    
     protected void expressao_aritmetica() throws IOException {
         termo();
         while (tokenAtual.getTipo().equals("PLUS") || tokenAtual.getTipo().equals("MINUS")) {
@@ -460,17 +443,16 @@ public class Parser {
         }
     }
 
-    
     protected void if_cmd() throws IOException {
         consumir("IF");
         if (!consumir("LPAREN")) {
-            erro("Esperado '(' após 'if'");
+            erro("Expected '(' after 'if'");
         }
         String tipoCondicao = verificarExpressao();
         verificarCondicao(tipoCondicao);
 
         if (!consumir("RPAREN")) {
-            erro("Esperado ')' após expressão");
+            erro("Expected ')' after expression");
         }
         bloco();
 
@@ -479,27 +461,25 @@ public class Parser {
         }
     }
 
-    
     protected void while_cmd() throws IOException {
         consumir("WHILE");
         if (!consumir("LPAREN")) {
-            erro("Esperado '(' após 'while'");
+            erro("Expected '(' after 'while'");
         }
 
         String tipoCondicao = verificarExpressao();
         verificarCondicao(tipoCondicao);
 
         if (!consumir("RPAREN")) {
-            erro("Esperado ')' após expressão");
+            erro("Expected ')' after expression");
         }
         bloco();
     }
 
-    
     protected void for_cmd() throws IOException {
         consumir("FOR");
         if (!consumir("LPAREN")) {
-            erro("Esperado '(' após for");
+            erro("Expected '(' after 'for'");
         }
         if (tokenAtual.getTipo().matches("INT|FLOAT|DOUBLE|CHAR|VOID|STRUCT")) {
             especificador_tipo();
@@ -508,16 +488,15 @@ public class Parser {
         atribuicao();
         expressao();
         if (!consumir("SEMICOLON")) {
-            erro("Esperado ';' após condição do for");
+            erro("Expected ';' after 'for' condition");
         }
         atribuicao_sem_ponto_e_virgula();
         if (!consumir("RPAREN")) {
-            erro("Esperado ')' após for");
+            erro("Expected ')' after 'for'");
         }
         bloco();
     }
 
-    
     protected String especificador_tipo() throws IOException {
         StringBuilder tipo = new StringBuilder();
         boolean hasType = false;
@@ -531,8 +510,8 @@ public class Parser {
                 tipo.append("struct ");
                 consumir("STRUCT");
                 if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
-                    erro("Esperado nome da struct após 'struct'");
-                    return "desconhecido";
+                    erro("Expected struct name after 'struct'");
+                    return "unknown";
                 }
                 tipo.append(tokenAtual.getValor());
                 avancar();
@@ -544,25 +523,24 @@ public class Parser {
         }
 
         if (!hasType) {
-            erro("Tipo inválido");
-            return "desconhecido";
+            erro("Invalid type specifier");
+            return "unknown";
         }
 
         return isStruct ? tipo.toString() : tipo.toString().trim();
     }
 
-    
     protected void printf_cmd() throws IOException {
         consumir("IDENTIFIER"); // "printf"
         if (!consumir("LPAREN")) {
-            erro("Esperado '(' após printf");
+            erro("Expected '(' after 'printf'");
             sincronizar();
             return;
         }
 
         // Expect a string literal as the first argument
         if (!tokenAtual.getTipo().equals("STRING")) {
-            erro("Esperado string de formato como primeiro argumento de printf");
+            erro("Expected format string as first argument of 'printf'");
             sincronizar();
             return;
         }
@@ -593,91 +571,88 @@ public class Parser {
             String expectedType = getExpectedTypeForSpecifier(specifier);
 
             if (!isCompatibleType(expectedType, argType)) {
-                erroSemantico("Tipo incompatível para formatador '" + specifier +
-                        "': esperado " + expectedType + ", recebido " + argType);
+                erroSemantico("Incompatible type for format specifier '" + specifier +
+                        "': expected " + expectedType + ", got " + argType);
             }
         }
 
         if (!consumir("RPAREN")) {
-            erro("Esperado ')' após argumentos de printf");
+            erro("Expected ')' after 'printf' arguments");
             sincronizar();
             return;
         }
         if (!consumir("SEMICOLON")) {
-            erro("Esperado ';' após printf");
+            erro("Expected ';' after 'printf'");
             sincronizar();
             return;
         }
     }
 
-    
     protected void scanf_cmd() throws IOException {
         consumir("IDENTIFIER");
         if (!consumir("LPAREN")) {
-            erro("Esperado '(' após scanf");
+            erro("Expected '(' after 'scanf'");
         }
         if (!tokenAtual.getTipo().equals("STRING")) {
-            erro("Esperado string de formato em scanf");
+            erro("Expected format string in 'scanf'");
         }
         avancar();
 
         while (consumir("COMMA")) {
             if (!consumir("BITWISE_AND")) {
-                erro("Esperado '&' antes do identificador em scanf");
+                erro("Expected '&' before identifier in 'scanf'");
             }
             if (!consumir("IDENTIFIER")) {
-                erro("Esperado identificador após &");
+                erro("Expected identifier after '&'");
             }
         }
 
         if (!consumir("RPAREN")) {
-            erro("Esperado ')' após scanf");
+            erro("Expected ')' after 'scanf'");
         }
         if (!consumir("SEMICOLON")) {
-            erro("Esperado ';' após scanf");
+            erro("Expected ';' after 'scanf'");
         }
     }
 
-    
     protected void do_while_cmd() throws IOException {
         consumir("DO");
         bloco();
         if (!consumir("WHILE")) {
-            erro("Esperado 'while' após bloco do do");
+            erro("Expected 'while' after 'do' block");
         }
         if (!consumir("LPAREN")) {
-            erro("Esperado '(' após while");
+            erro("Expected '(' after 'while'");
         }
         expressao();
         if (!consumir("RPAREN")) {
-            erro("Esperado ')' após expressão");
+            erro("Expected ')' after expression");
         }
         if (!consumir("SEMICOLON")) {
-            erro("Esperado ';' após do-while");
+            erro("Expected ';' after 'do-while'");
         }
     }
 
-    
     protected void switch_cmd() throws IOException {
         consumir("SWITCH");
         if (!consumir("LPAREN")) {
-            erro("Esperado '(' após switch");
+            erro("Expected '(' after 'switch'");
         }
         expressao();
         if (!consumir("RPAREN")) {
-            erro("Esperado ')' após expressão");
+            erro("Expected ')' after expression");
         }
         if (!consumir("LBRACE")) {
-            erro("Esperado '{' após switch");
+            erro("Expected '{' after 'switch'");
         }
 
         while (consumir("CASE")) {
             if (!tokenAtual.getTipo().equals("NUMBER") && !tokenAtual.getTipo().equals("CHAR")) {
-                erro("Esperado constante no case");
+                erro("Expected constant in 'case'");
             }
             avancar();
             if (!consumir("COLON")) {
-                erro("Esperado ':' após constante");
+                erro("Expected ':' after constant");
             }
             while (!tokenAtual.getTipo().equals("CASE")
                     && !tokenAtual.getTipo().equals("DEFAULT")
@@ -688,7 +663,7 @@ public class Parser {
 
         if (consumir("DEFAULT")) {
             if (!consumir("COLON")) {
-                erro("Esperado ':' após default");
+                erro("Expected ':' after 'default'");
             }
             while (!tokenAtual.getTipo().equals("RBRACE")) {
                 comando();
@@ -696,25 +671,23 @@ public class Parser {
         }
 
         if (!consumir("RBRACE")) {
-            erro("Esperado '}' após switch");
+            erro("Expected '}' after 'switch'");
         }
     }
 
-    
     protected void return_cmd() throws IOException {
         consumir("RETURN");
 
         String tipoExpressao = verificarExpressao();
         if (tipoRetornoAtual != null) {
-            verificarCompatibilidadeTipos(tipoRetornoAtual, tipoExpressao, "retorno");
+            verificarCompatibilidadeTipos(tipoRetornoAtual, tipoExpressao, "return");
         }
 
         if (!consumir("SEMICOLON")) {
-            erro("Esperado ';' após return");
+            erro("Expected ';' after 'return'");
         }
     }
 
-    
     protected void atribuicao() throws IOException {
         boolean isPrefix = false;
         if (tokenAtual.getTipo().equals("INCREMENT") || tokenAtual.getTipo().equals("DECREMENT")) {
@@ -724,14 +697,14 @@ public class Parser {
 
         String tipoLValue = parseLValuePath();
 
-        if (tipoLValue == null || tipoLValue.equals("desconhecido")) {
-            erro("Caminho inválido para atribuição");
+        if (tipoLValue == null || tipoLValue.equals("unknown")) {
+            erro("Invalid lvalue for assignment");
             return;
         }
 
         if (isPrefix) {
             if (!consumir("SEMICOLON")) {
-                erro("Esperado ';' após incremento/decremento");
+                erro("Expected ';' after increment/decrement");
             }
         } else if (tokenAtual.getTipo().equals("ASSIGN")
                 || tokenAtual.getTipo().equals("ADD_ASSIGN")
@@ -743,33 +716,33 @@ public class Parser {
             avancar();
 
             String tipoExpressao = verificarExpressao();
-            verificarCompatibilidadeTipos(tipoLValue, tipoExpressao, "atribuição com " + operador);
+            verificarCompatibilidadeTipos(tipoLValue, tipoExpressao, "assignment with " + operador);
 
             if (!consumir("SEMICOLON")) {
-                erro("Esperado ';' após expressão");
+                erro("Expected ';' after expression");
             }
         } else if (tokenAtual.getTipo().equals("INCREMENT") || tokenAtual.getTipo().equals("DECREMENT")) {
             avancar();
             if (!consumir("SEMICOLON")) {
-                erro("Esperado ';' após incremento/decremento");
+                erro("Expected ';' after increment/decrement");
             }
         } else {
-            erro("Esperado operador de atribuição após identificador");
+            erro("Expected assignment operator after identifier");
         }
     }
 
     private String parseLValuePath() throws IOException {
         if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
-            erro("Esperado identificador para atribuição");
-            return "desconhecido";
+            erro("Expected identifier for assignment");
+            return "unknown";
         }
 
         String nomeBase = tokenAtual.getValor();
         Variavel var = escopos.buscarVariavel(nomeBase);
         if (var == null) {
-            erroSemantico("Variável '" + nomeBase + "' não declarada");
+            erroSemantico("Variable '" + nomeBase + "' undeclared");
         }
-        String tipoAtual = var != null ? var.getTipo() : "desconhecido";
+        String tipoAtual = var != null ? var.getTipo() : "unknown";
         avancar();
 
         while (tokenAtual != null) {
@@ -777,10 +750,10 @@ public class Parser {
                 avancar();
                 String tipoIndice = verificarExpressao();
                 if (!tipoIndice.equals("int") && !tipoIndice.equals("number")) {
-                    erroSemantico("Índice de array deve ser inteiro");
+                    erroSemantico("Array index must be an integer");
                 }
                 if (!consumir("RBRACKET")) {
-                    erro("Esperado ']' após índice do array");
+                    erro("Expected ']' after array index");
                 }
             } else if (tokenAtual.getTipo().equals("DOT") || tokenAtual.getTipo().equals("ARROW")) {
                 String operador = tokenAtual.getTipo().equals("ARROW") ? "->" : ".";
@@ -788,8 +761,8 @@ public class Parser {
                 avancar();
 
                 if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
-                    erro("Esperado identificador após '" + operador + "'");
-                    return "desconhecido";
+                    erro("Expected identifier after '" + operador + "'");
+                    return "unknown";
                 }
 
                 String campo = tokenAtual.getValor();
@@ -797,27 +770,27 @@ public class Parser {
 
                 if (isPointerAccess) {
                     if (!tipoAtual.endsWith("*")) {
-                        erroSemantico("Acesso '->' em não-ponteiro");
+                        erroSemantico("Invalid use of '->' on non-pointer '" + nomeBase + "' (type: " + tipoAtual + "). Use '.' for struct access");
                     }
                     tipoAtual = tipoAtual.substring(0, tipoAtual.length() - 1).trim();
                 }
 
                 if (!tipoAtual.startsWith("struct ")) {
-                    erroSemantico("Acesso a campo em não-estrutura: " + tipoAtual);
-                    return "desconhecido";
+                    erroSemantico("Field access on non-struct type: '" + nomeBase + "' (type: " + tipoAtual + ")");
+                    return "unknown";
                 }
 
                 String nomeStruct = tipoAtual.substring(7);
                 Struct struct = escopos.buscarStruct(nomeStruct);
                 if (struct == null) {
-                    erroSemantico("Struct não definida: " + nomeStruct);
-                    return "desconhecido";
+                    erroSemantico("Struct '" + nomeStruct + "' not defined");
+                    return "unknown";
                 }
 
                 String tipoCampo = struct.getCampos().get(campo);
                 if (tipoCampo == null) {
-                    erroSemantico("Campo '" + campo + "' não existe em " + nomeStruct);
-                    return "desconhecido";
+                    erroSemantico("Field '" + campo + "' not defined in struct '" + nomeStruct + "' for '" + nomeBase + operador + campo + "'");
+                    return "unknown";
                 }
 
                 tipoAtual = tipoCampo;
@@ -829,18 +802,17 @@ public class Parser {
         return tipoAtual;
     }
 
-    
     protected void chamada_funcao() throws IOException {
         String nomeFuncao = tokenAtual.getValor();
         avancar();
 
         Funcao funcao = escopos.buscarFuncao(nomeFuncao);
         if (funcao == null) {
-            erroSemantico("Função '" + nomeFuncao + "' não declarada");
+            erroSemantico("Function '" + nomeFuncao + "' undeclared");
         }
 
         if (!consumir("LPAREN")) {
-            erro("Esperado '(' após nome da função");
+            erro("Expected '(' after function name");
         }
 
         int contadorArgs = 0;
@@ -851,46 +823,44 @@ public class Parser {
 
                 if (funcao != null && contadorArgs <= funcao.getParametros().size()) {
                     Parametro param = funcao.getParametros().get(contadorArgs - 1);
-                    verificarCompatibilidadeTipos(param.getTipo(), tipoArg, "argumento");
+                    verificarCompatibilidadeTipos(param.getTipo(), tipoArg, "argument");
                 }
             } while (consumir("COMMA"));
         }
 
         if (funcao != null && contadorArgs != funcao.getParametros().size()) {
-            erroSemantico("Número incorreto de argumentos para '" + nomeFuncao
-                    + "'. Esperados: " + funcao.getParametros().size()
-                    + ", fornecidos: " + contadorArgs);
+            erroSemantico("Incorrect number of arguments for '" + nomeFuncao
+                    + "'. Expected: " + funcao.getParametros().size()
+                    + ", provided: " + contadorArgs);
         }
 
         if (!consumir("RPAREN")) {
-            erro("Esperado ')' após argumentos");
+            erro("Expected ')' after arguments");
         }
     }
 
     private void verificarCompatibilidadeTipos(String tipoEsperado, String tipoRecebido, String contexto) {
         if (!tipoEsperado.equals(tipoRecebido)) {
-            erroSemantico("Incompatibilidade de tipos em " + contexto
-                    + ". Esperado: " + tipoEsperado + ", Recebido: " + tipoRecebido);
+            erroSemantico("Type mismatch in " + contexto
+                    + ". Expected: " + tipoEsperado + ", got: " + tipoRecebido);
         }
     }
 
     private void verificarCondicao(String tipo) {
         if (!tipo.equals("bool") && !tipo.equals("int")) {
-            erroSemantico("Condição deve ser booleana ou numérica. Tipo recebido: " + tipo);
+            erroSemantico("Condition must be boolean or numeric. Got: " + tipo);
         }
     }
 
-    
     protected void argumentos() throws IOException {
         do {
             expressao();
         } while (consumir("COMMA"));
     }
 
-    
     protected void bloco() throws IOException {
         if (!consumir("LBRACE")) {
-            erro("Esperado '{' para iniciar bloco");
+            erro("Expected '{' to start block");
         }
 
         escopos.abrirEscopo();
@@ -900,18 +870,16 @@ public class Parser {
         }
 
         if (!consumir("RBRACE")) {
-            erro("Esperado '}' para fechar bloco");
+            erro("Expected '}' to close block");
         }
 
         escopos.fecharEscopo();
     }
 
-    
     protected boolean eOperadorRelacional() {
         return tokenAtual.getTipo().matches("EQUAL|NOT_EQUAL|LESS|GREATER|LESS_EQUAL|GREATER_EQUAL");
     }
 
-    
     protected void termo() throws IOException {
         fator();
         while (tokenAtual.getTipo().equals("MULTIPLY") || tokenAtual.getTipo().equals("DIVIDE")) {
@@ -920,7 +888,6 @@ public class Parser {
         }
     }
 
-    
     protected void atribuicao_sem_ponto_e_virgula() throws IOException {
         consumir("IDENTIFIER");
 
@@ -931,11 +898,10 @@ public class Parser {
                 || consumir("MUL_ASSIGN") || consumir("DIV_ASSIGN")) {
             expressao();
         } else {
-            erro("Esperado operador de atribuição após identificador");
+            erro("Expected assignment operator after identifier");
         }
     }
 
-    
     protected void fator() throws IOException {
         elemento();
 
@@ -943,12 +909,11 @@ public class Parser {
             consumir("LBRACKET");
             expressao();
             if (!consumir("RBRACKET")) {
-                erro("Esperado ']' após índice do array");
+                erro("Expected ']' after array index");
             }
         }
     }
 
-    
     protected void elemento() throws IOException {
         if (consumir("MULTIPLY") || consumir("BITWISE_AND") || consumir("NOT") || consumir("MINUS")
                 || consumir("INCREMENT") || consumir("DECREMENT")) {
@@ -970,7 +935,7 @@ public class Parser {
                     avancar();
                     expressao();
                     if (!consumir("RBRACKET")) {
-                        erro("Esperado ']' após índice do array");
+                        erro("Expected ']' after array index");
                         sincronizar();
                         return;
                     }
@@ -978,7 +943,7 @@ public class Parser {
                     String operador = tokenAtual.getTipo().equals("ARROW") ? "->" : ".";
                     avancar();
                     if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
-                        erro("Esperado identificador após '" + operador + "' em '" + nome + "'");
+                        erro("Expected identifier after '" + operador + "' in '" + nome + "'");
                         sincronizar();
                         return;
                     }
@@ -995,12 +960,12 @@ public class Parser {
         } else if (consumir("LPAREN")) {
             expressao();
             if (!consumir("RPAREN")) {
-                erro("Esperado ')' após expressão");
+                erro("Expected ')' after expression");
                 sincronizar();
                 return;
             }
         } else {
-            erro("Elemento inválido: " + (tokenAtual != null ? tokenAtual.getValor() : "null"));
+            erro("Invalid element: " + (tokenAtual != null ? tokenAtual.getValor() : "null"));
             if (tokenAtual != null) {
                 avancar();
             }
@@ -1009,7 +974,6 @@ public class Parser {
         }
     }
 
-    
     protected void ponteiro() throws IOException {
         while (consumir("MULTIPLY")) {
         }
@@ -1025,12 +989,12 @@ public class Parser {
         if (consumir("QUESTION")) {
             String tipoVerdadeiro = verificarExpressao();
             if (!consumir("COLON")) {
-                erro("Esperado ':' no operador ternário");
+                erro("Expected ':' in ternary operator");
             }
             String tipoFalso = verificarExpressao();
 
             if (!tiposCompativeis(tipoVerdadeiro, tipoFalso)) {
-                erroSemantico("Tipos incompatíveis no operador ternário: " + tipoVerdadeiro + " e " + tipoFalso);
+                erroSemantico("Incompatible types in ternary operator: " + tipoVerdadeiro + " and " + tipoFalso);
             }
             return tipoVerdadeiro;
         }
@@ -1045,7 +1009,7 @@ public class Parser {
             String tipoDir = verificarExpressaoRelacional();
 
             if (!ehTipoBooleano(tipo) || !ehTipoBooleano(tipoDir)) {
-                erroSemantico("Operandos lógicos devem ser booleanos");
+                erroSemantico("Logical operands must be boolean");
             }
             tipo = "int";
         }
@@ -1060,7 +1024,7 @@ public class Parser {
             String tipoDir = verificarExpressaoAritmetica();
 
             if (!ehTipoNumerico(tipo) || !ehTipoNumerico(tipoDir)) {
-                erroSemantico("Operandos relacionais devem ser numéricos");
+                erroSemantico("Relational operands must be numeric");
             }
             tipo = "int";
         }
@@ -1079,7 +1043,7 @@ public class Parser {
             String tipoDir = verificarTermo();
 
             if (!ehTipoNumerico(tipo) || !ehTipoNumerico(tipoDir)) {
-                erroSemantico("Operandos aritméticos devem ser numéricos");
+                erroSemantico("Arithmetic operands must be numeric");
             }
 
             tipo = determinarTipoResultante(tipo, tipoDir);
@@ -1095,7 +1059,7 @@ public class Parser {
             String tipoDir = verificarFator();
 
             if (!ehTipoNumerico(tipo) || !ehTipoNumerico(tipoDir)) {
-                erroSemantico("Operandos devem ser numéricos");
+                erroSemantico("Arithmetic operands must be numeric");
             }
             tipo = determinarTipoResultante(tipo, tipoDir);
         }
@@ -1110,11 +1074,11 @@ public class Parser {
             String tipoIndice = verificarExpressao();
 
             if (!tipoIndice.equals("int")) {
-                erroSemantico("Índice de array deve ser inteiro");
+                erroSemantico("Array index must be an integer");
             }
 
             if (!consumir("RBRACKET")) {
-                erro("Esperado ']' após índice do array");
+                erro("Expected ']' after array index");
             }
 
             tipo = obterTipoBaseArray(tipo);
@@ -1131,8 +1095,8 @@ public class Parser {
             switch (operador) {
                 case "MULTIPLY":
                     if (!tipoOperando.endsWith("*")) {
-                        erroSemantico("Operador de desreferência '*' requer um ponteiro, recebido: " + tipoOperando);
-                        return "desconhecido";
+                        erroSemantico("Dereference operator '*' requires a pointer, got: " + tipoOperando);
+                        return "unknown";
                     }
                     return obterTipoBasePonteiro(tipoOperando);
                 case "BITWISE_AND":
@@ -1140,13 +1104,13 @@ public class Parser {
                 case "NOT":
                 case "MINUS":
                     if (!ehTipoNumerico(tipoOperando)) {
-                        erroSemantico("Operando unário inválido para " + operador + ": " + tipoOperando);
+                        erroSemantico("Invalid unary operand for '" + operador + "': " + tipoOperando);
                     }
                     return tipoOperando;
                 case "INCREMENT":
                 case "DECREMENT":
                     if (!ehTipoNumerico(tipoOperando)) {
-                        erroSemantico("Operando de incremento/decremento deve ser numérico, recebido: " + tipoOperando);
+                        erroSemantico("Increment/decrement operand must be numeric, got: " + tipoOperando);
                     }
                     return tipoOperando;
                 default:
@@ -1159,17 +1123,17 @@ public class Parser {
             Funcao funcao = escopos.buscarFuncao(nomeFuncao);
             chamada_funcao();
             if (funcao == null) {
-                erroSemantico("Função '" + nomeFuncao + "' não declarada");
-                return "desconhecido";
+                erroSemantico("Function '" + nomeFuncao + "' undeclared");
+                return "unknown";
             }
             return funcao.getTipoRetorno();
         } else if (tokenAtual.getTipo().equals("IDENTIFIER")) {
             String nome = tokenAtual.getValor();
             Variavel var = escopos.buscarVariavel(nome);
             if (var == null) {
-                erroSemantico("Variável '" + nome + "' não declarada");
+                erroSemantico("Variable '" + nome + "' undeclared");
                 avancar();
-                return "desconhecido";
+                return "unknown";
             }
             String tipoAtual = var.getTipo();
             avancar();
@@ -1184,20 +1148,20 @@ public class Parser {
                     avancar();
                     String tipoIndice = verificarExpressao();
                     if (!tipoIndice.equals("int")) {
-                        erroSemantico("Índice de array deve ser inteiro, recebido: " + tipoIndice);
+                        erroSemantico("Array index must be an integer, got: " + tipoIndice);
                     }
                     if (!consumir("RBRACKET")) {
-                        erro("Esperado ']' após índice do array");
+                        erro("Expected ']' after array index");
                         sincronizar();
-                        return "desconhecido";
+                        return "unknown";
                     }
                     if (tipoAtual.endsWith("[]")) {
                         tipoAtual = tipoAtual.substring(0, tipoAtual.length() - 2).trim();
                     } else if (tipoAtual.endsWith("*")) {
                         tipoAtual = tipoAtual.substring(0, tipoAtual.length() - 1).trim();
                     } else {
-                        erroSemantico("Tentativa de indexação em não-array: " + tipoAtual);
-                        tipoAtual = "desconhecido";
+                        erroSemantico("Invalid array indexing on non-array: " + tipoAtual);
+                        tipoAtual = "unknown";
                     }
                 } else if (tokenAtual.getTipo().equals("DOT") || tokenAtual.getTipo().equals("ARROW")) {
                     boolean isPointerAccess = tokenAtual.getTipo().equals("ARROW");
@@ -1205,23 +1169,23 @@ public class Parser {
                     avancar();
 
                     if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
-                        erroSemantico("Esperado identificador após '" + operador + "' em '" + nome + "'");
+                        erroSemantico("Expected identifier after '" + operador + "' in '" + nome + "'");
                         if (tokenAtual != null) {
                             avancar();
                         }
-                        return "desconhecido";
+                        return "unknown";
                     }
                     String campo = tokenAtual.getValor();
                     avancar();
 
                     if (isPointerAccess && !tipoAtual.endsWith("*")) {
-                        erroSemantico("Acesso '->' em não-ponteiro '" + nome + "' (tipo: " + tipoAtual + "). Use '.' para acessar campos.");
-                        tipoAtual = "desconhecido";
+                        erroSemantico("Invalid use of '->' on non-pointer '" + nome + "' (type: " + tipoAtual + "). Use '.' for struct access");
+                        tipoAtual = "unknown";
                         continue;
                     }
                     if (!isPointerAccess && tipoAtual.endsWith("*")) {
-                        erroSemantico("Acesso '.' em ponteiro '" + nome + "' (tipo: " + tipoAtual + "). Use '->' para acessar campos.");
-                        tipoAtual = "desconhecido";
+                        erroSemantico("Invalid use of '.' on pointer '" + nome + "' (type: " + tipoAtual + "). Use '->' for struct access");
+                        tipoAtual = "unknown";
                         continue;
                     }
 
@@ -1230,29 +1194,29 @@ public class Parser {
                     }
 
                     if (!tipoAtual.startsWith("struct ")) {
-                        erroSemantico("Acesso a campo em não-estrutura: '" + nome + "' (tipo: " + tipoAtual + ")");
-                        tipoAtual = "desconhecido";
+                        erroSemantico("Field access on non-struct type: '" + nome + "' (type: " + tipoAtual + ")");
+                        tipoAtual = "unknown";
                         continue;
                     }
                     String nomeStruct = tipoAtual.substring(7).replaceAll("\\*|\\[\\]", "").trim();
 
                     Struct struct = escopos.buscarStruct(nomeStruct);
                     if (struct == null) {
-                        erroSemantico("Struct não definida: '" + nomeStruct + "' para '" + nome + operador + campo + "'");
-                        tipoAtual = "desconhecido";
+                        erroSemantico("Struct '" + nomeStruct + "' not defined for '" + nome + operador + campo + "'");
+                        tipoAtual = "unknown";
                         continue;
                     }
 
                     String tipoCampo = struct.getCampos().get(campo);
                     if (tipoCampo == null) {
-                        erroSemantico("Campo '" + campo + "' não existe em struct '" + nomeStruct + "' para '" + nome + operador + campo + "'");
-                        tipoAtual = "desconhecido";
+                        erroSemantico("Field '" + campo + "' not defined in struct '" + nomeStruct + "' for '" + nome + operador + campo + "'");
+                        tipoAtual = "unknown";
                     } else {
                         tipoAtual = tipoCampo;
                     }
                 } else {
                     if (!ehTipoNumerico(tipoAtual)) {
-                        erroSemantico("Operando de incremento/decremento deve ser numérico, recebido: " + tipoAtual);
+                        erroSemantico("Increment/decrement operand must be numeric, got: " + tipoAtual);
                     }
                     avancar();
                 }
@@ -1273,18 +1237,18 @@ public class Parser {
         } else if (consumir("LPAREN")) {
             String tipo = verificarExpressao();
             if (!consumir("RPAREN")) {
-                erro("Esperado ')' após expressão");
+                erro("Expected ')' after expression");
                 sincronizar();
-                return "desconhecido";
+                return "unknown";
             }
             return tipo;
         } else {
-            erro("Elemento inválido: " + (tokenAtual != null ? tokenAtual.getValor() : "null"));
+            erro("Invalid element: " + (tokenAtual != null ? tokenAtual.getValor() : "null"));
             if (tokenAtual != null) {
                 avancar();
             }
             sincronizar();
-            return "desconhecido";
+            return "unknown";
         }
     }
 
@@ -1352,10 +1316,9 @@ public class Parser {
         if (tipo.endsWith("*")) {
             return tipo.substring(0, tipo.length() - 1);
         }
-        return "desconhecido";
+        return "unknown";
     }
 
-    // Helper method to map format specifiers to expected types
     private String getExpectedTypeForSpecifier(String specifier) {
         switch (specifier) {
             case "%s":
@@ -1372,20 +1335,17 @@ public class Parser {
             case "%c":
                 return "char";
             default:
-                return "desconhecido";
+                return "unknown";
         }
     }
 
-    // Helper method to check type compatibility for printf format specifiers
     private boolean isCompatibleType(String expectedType, String actualType) {
         if (expectedType.equals(actualType)) {
             return true;
         }
-        // Allow char[] for %s
         if (expectedType.equals("char*") && actualType.equals("char[]")) {
             return true;
         }
-        // Allow numeric promotions
         if (expectedType.equals("double") && actualType.matches("float|int|char")) {
             return true;
         }
