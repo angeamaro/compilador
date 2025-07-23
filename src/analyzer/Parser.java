@@ -7,8 +7,9 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import models.*;
+import abstracts.AParser;
 
-public class Parser {
+public class Parser extends AParser {
 
     protected Token tokenAtual;
     protected int pos = 0;
@@ -38,10 +39,12 @@ public class Parser {
         }
     }
 
+    @Override
     public int getCountErros() {
         return countErros;
     }
 
+    @Override
     protected boolean consumir(String esperado) throws IOException {
         if (tokenAtual.getTipo().equals(esperado)) {
             avancar();
@@ -50,6 +53,7 @@ public class Parser {
         return false;
     }
 
+    @Override
     protected void avancar() {
         pos++;
         if (pos < tokens.size()) {
@@ -59,6 +63,7 @@ public class Parser {
         }
     }
 
+    @Override
     protected void erro(String msg) throws IOException {
         System.err.println("[Error] " + msg + " found '" + tokenAtual.getValor()
                 + "' at line " + tokenAtual.getLinha()
@@ -67,13 +72,15 @@ public class Parser {
         sincronizar();
     }
 
-    private void erroSemantico(String mensagem) {
+    @Override
+    protected void erroSemantico(String mensagem) {
         int linha = tokenAtual != null ? tokenAtual.getLinha() : -1;
         int coluna = tokenAtual != null ? tokenAtual.getColuna() : -1;
         System.err.println("[Semantic Error] " + mensagem + " at line " + linha + ", column " + coluna);
         countErros++;
     }
 
+    @Override
     protected void sincronizar() {
         while (!tokenAtual.getTipo().equals("SEMICOLON")
                 && !tokenAtual.getTipo().equals("RBRACE")
@@ -85,6 +92,8 @@ public class Parser {
         }
     }
 
+    // <programa> ::= { <declaracao_global> }*
+    @Override
     public void parse() throws IOException {
         escopos.abrirEscopo(); // Global scope
         programa();
@@ -94,6 +103,8 @@ public class Parser {
         escopos.fecharEscopo();
     }
 
+    // <programa> ::= { <declaracao_global> }*
+    @Override
     public void programa() throws IOException {
         while (!tokenAtual.getTipo().equals("EOF")) {
             if (tokenAtual.getTipo().equals("STRUCT")) {
@@ -126,6 +137,8 @@ public class Parser {
         }
     }
 
+    // <declaracao_struct> ::= STRUCT IDENTIFIER LBRACE { <campo_struct> }* RBRACE [SEMICOLON]
+    @Override
     protected void declaracao_struct() throws IOException {
         consumir("STRUCT");
         if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
@@ -232,6 +245,8 @@ public class Parser {
         escopos.adicionarStruct(nomeStruct, struct);
     }
 
+    // <declaracao_funcao> ::= <especificador_tipo> <ponteiro> (IDENTIFIER | MAIN) LPAREN [ <parametros> ] RPAREN <bloco>
+    @Override
     protected void declaracao_funcao() throws IOException {
         String tipoRetorno = especificador_tipo();
         ponteiro();
@@ -281,6 +296,8 @@ public class Parser {
         tipoRetornoAtual = null;
     }
 
+    // <parametros> ::= <parametro> { COMMA <parametro> }*
+    @Override
     protected List<Parametro> parametros() throws IOException {
         List<Parametro> parametros = new ArrayList<>();
         do {
@@ -310,6 +327,8 @@ public class Parser {
         return parametros;
     }
 
+    // <comando> ::= <declaracao> | <if_cmd> | <while_cmd> | <for_cmd> | <do_while_cmd> | <switch_cmd> | <printf_cmd> | <scanf_cmd> | <return_cmd> | <atribuicao> | <chamada_funcao_cmd> | BREAK SEMICOLON | CONTINUE SEMICOLON
+    @Override
     protected void comando() throws IOException {
         if (tokenAtual.getTipo().equals("CONST")
                 || tokenAtual.getTipo().equals("VOID")
@@ -362,6 +381,8 @@ public class Parser {
         }
     }
 
+    // <declaracao> ::= [ CONST ] <especificador_tipo> <ponteiro> <lista_identificadores> SEMICOLON
+    @Override
     protected void declaracao() throws IOException {
         boolean isConst = consumir("CONST");
         String tipo = especificador_tipo();
@@ -372,6 +393,8 @@ public class Parser {
         }
     }
 
+    // <lista_identificadores> ::= <identificador_decl> { COMMA <identificador_decl> }*
+    @Override
     protected void lista_identificadores(String tipo) throws IOException {
         do {
             if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
@@ -404,10 +427,19 @@ public class Parser {
         } while (consumir("COMMA"));
     }
 
+    // <expressao> ::= <expressao_ternaria>
+    @Override
     protected void expressao() throws IOException {
         expressao_ternaria();
     }
 
+    // <expressao_ternaria> ::= <expressao_logica> [ QUESTION <expressao> COLON <expressao> ]
+
+    /**
+     *
+     * @throws IOException
+     */
+    @Override
     protected void expressao_ternaria() throws IOException {
         expressao_logica();
         if (consumir("QUESTION")) {
@@ -419,6 +451,8 @@ public class Parser {
         }
     }
 
+    // <expressao_logica> ::= <expressao_relacional> { (AND | OR) <expressao_relacional> }*
+    @Override
     protected void expressao_logica() throws IOException {
         expressao_relacional();
         while (tokenAtual.getTipo().equals("AND") || tokenAtual.getTipo().equals("OR")) {
@@ -427,6 +461,8 @@ public class Parser {
         }
     }
 
+    // <expressao_relacional> ::= <expressao_aritmetica> [ <op_relacional> <expressao_aritmetica> ]
+    @Override
     protected void expressao_relacional() throws IOException {
         expressao_aritmetica();
         while (eOperadorRelacional()) {
@@ -435,6 +471,8 @@ public class Parser {
         }
     }
 
+    // <expressao_aritmetica> ::= <termo> { (PLUS | MINUS) <termo> }*
+    @Override
     protected void expressao_aritmetica() throws IOException {
         termo();
         while (tokenAtual.getTipo().equals("PLUS") || tokenAtual.getTipo().equals("MINUS")) {
@@ -443,6 +481,8 @@ public class Parser {
         }
     }
 
+    // <if_cmd> ::= IF LPAREN <expressao> RPAREN <bloco> [ ELSE <bloco> ]
+    @Override
     protected void if_cmd() throws IOException {
         consumir("IF");
         if (!consumir("LPAREN")) {
@@ -461,6 +501,8 @@ public class Parser {
         }
     }
 
+    // <while_cmd> ::= WHILE LPAREN <expressao> RPAREN <bloco>
+    @Override
     protected void while_cmd() throws IOException {
         consumir("WHILE");
         if (!consumir("LPAREN")) {
@@ -476,6 +518,8 @@ public class Parser {
         bloco();
     }
 
+    // <for_cmd> ::= FOR LPAREN <inicializacao_for> <expressao> SEMICOLON <atribuicao_sem_ponto_e_virgula> RPAREN <bloco>
+    @Override
     protected void for_cmd() throws IOException {
         consumir("FOR");
         if (!consumir("LPAREN")) {
@@ -497,6 +541,8 @@ public class Parser {
         bloco();
     }
 
+    // <especificador_tipo> ::= {<tipo_simples>}+ | STRUCT IDENTIFIER
+    @Override
     protected String especificador_tipo() throws IOException {
         StringBuilder tipo = new StringBuilder();
         boolean hasType = false;
@@ -530,6 +576,8 @@ public class Parser {
         return isStruct ? tipo.toString() : tipo.toString().trim();
     }
 
+    // <printf_cmd> ::= IDENTIFIER LPAREN <expressao> { COMMA <expressao> }* RPAREN SEMICOLON
+    @Override
     protected void printf_cmd() throws IOException {
         consumir("IDENTIFIER"); // "printf"
         if (!consumir("LPAREN")) {
@@ -588,6 +636,8 @@ public class Parser {
         }
     }
 
+    // <scanf_cmd> ::= IDENTIFIER LPAREN STRING { COMMA BITWISE_AND IDENTIFIER }* RPAREN SEMICOLON
+    @Override
     protected void scanf_cmd() throws IOException {
         consumir("IDENTIFIER");
         if (!consumir("LPAREN")) {
@@ -615,6 +665,8 @@ public class Parser {
         }
     }
 
+    // <do_while_cmd> ::= DO <bloco> WHILE LPAREN <expressao> RPAREN SEMICOLON
+    @Override
     protected void do_while_cmd() throws IOException {
         consumir("DO");
         bloco();
@@ -633,6 +685,8 @@ public class Parser {
         }
     }
 
+    // <switch_cmd> ::= SWITCH LPAREN <expressao> RPAREN LBRACE { <case_bloco> }* [ <default_bloco> ] RBRACE
+    @Override
     protected void switch_cmd() throws IOException {
         consumir("SWITCH");
         if (!consumir("LPAREN")) {
@@ -675,6 +729,8 @@ public class Parser {
         }
     }
 
+    // <return_cmd> ::= RETURN <expressao> SEMICOLON
+    @Override
     protected void return_cmd() throws IOException {
         consumir("RETURN");
 
@@ -688,6 +744,8 @@ public class Parser {
         }
     }
 
+    // <atribuicao> ::= ( (INCREMENT | DECREMENT) <lvalue> | <lvalue> ( <op_atribuicao> <expressao> | INCREMENT | DECREMENT ) ) SEMICOLON
+    @Override
     protected void atribuicao() throws IOException {
         boolean isPrefix = false;
         if (tokenAtual.getTipo().equals("INCREMENT") || tokenAtual.getTipo().equals("DECREMENT")) {
@@ -731,6 +789,7 @@ public class Parser {
         }
     }
 
+    // <lvalue> ::= IDENTIFIER [ LBRACKET <expressao> RBRACKET ]
     private String parseLValuePath() throws IOException {
         if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
             erro("Expected identifier for assignment");
@@ -745,63 +804,56 @@ public class Parser {
         String tipoAtual = var != null ? var.getTipo() : "unknown";
         avancar();
 
+        OUTER:
         while (tokenAtual != null) {
-            if (tokenAtual.getTipo().equals("LBRACKET")) {
-                avancar();
-                String tipoIndice = verificarExpressao();
-                if (!tipoIndice.equals("int") && !tipoIndice.equals("number")) {
-                    erroSemantico("Array index must be an integer");
-                }
-                if (!consumir("RBRACKET")) {
-                    erro("Expected ']' after array index");
-                }
-            } else if (tokenAtual.getTipo().equals("DOT") || tokenAtual.getTipo().equals("ARROW")) {
-                String operador = tokenAtual.getTipo().equals("ARROW") ? "->" : ".";
-                boolean isPointerAccess = tokenAtual.getTipo().equals("ARROW");
-                avancar();
-
-                if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
-                    erro("Expected identifier after '" + operador + "'");
-                    return "unknown";
-                }
-
-                String campo = tokenAtual.getValor();
-                avancar();
-
-                if (isPointerAccess) {
-                    if (!tipoAtual.endsWith("*")) {
-                        erroSemantico("Invalid use of '->' on non-pointer '" + nomeBase + "' (type: " + tipoAtual + "). Use '.' for struct access");
-                    }
-                    tipoAtual = tipoAtual.substring(0, tipoAtual.length() - 1).trim();
-                }
-
-                if (!tipoAtual.startsWith("struct ")) {
-                    erroSemantico("Field access on non-struct type: '" + nomeBase + "' (type: " + tipoAtual + ")");
-                    return "unknown";
-                }
-
-                String nomeStruct = tipoAtual.substring(7);
-                Struct struct = escopos.buscarStruct(nomeStruct);
-                if (struct == null) {
-                    erroSemantico("Struct '" + nomeStruct + "' not defined");
-                    return "unknown";
-                }
-
-                String tipoCampo = struct.getCampos().get(campo);
-                if (tipoCampo == null) {
-                    erroSemantico("Field '" + campo + "' not defined in struct '" + nomeStruct + "' for '" + nomeBase + operador + campo + "'");
-                    return "unknown";
-                }
-
-                tipoAtual = tipoCampo;
-            } else {
-                break;
+            switch (tokenAtual.getTipo()) {
+                case "LBRACKET":
+                    avancar();
+                    String tipoIndice = verificarExpressao();
+                    if (!tipoIndice.equals("int") && !tipoIndice.equals("number")) {
+                        erroSemantico("Array index must be an integer");
+                    }   if (!consumir("RBRACKET")) {
+                        erro("Expected ']' after array index");
+                    }   break;
+                case "DOT":
+                case "ARROW":
+                    String operador = tokenAtual.getTipo().equals("ARROW") ? "->" : ".";
+                    boolean isPointerAccess = tokenAtual.getTipo().equals("ARROW");
+                    avancar();
+                    if (!tokenAtual.getTipo().equals("IDENTIFIER")) {
+                        erro("Expected identifier after '" + operador + "'");
+                        return "unknown";
+                    }   String campo = tokenAtual.getValor();
+                    avancar();
+                    if (isPointerAccess) {
+                        if (!tipoAtual.endsWith("*")) {
+                            erroSemantico("Invalid use of '->' on non-pointer '" + nomeBase + "' (type: " + tipoAtual + "). Use '.' for struct access");
+                        }
+                        tipoAtual = tipoAtual.substring(0, tipoAtual.length() - 1).trim();
+                    }   if (!tipoAtual.startsWith("struct ")) {
+                        erroSemantico("Field access on non-struct type: '" + nomeBase + "' (type: " + tipoAtual + ")");
+                        return "unknown";
+                    }   String nomeStruct = tipoAtual.substring(7);
+                    Struct struct = escopos.buscarStruct(nomeStruct);
+                    if (struct == null) {
+                        erroSemantico("Struct '" + nomeStruct + "' not defined");
+                        return "unknown";
+                    }   String tipoCampo = struct.getCampos().get(campo);
+                    if (tipoCampo == null) {
+                        erroSemantico("Field '" + campo + "' not defined in struct '" + nomeStruct + "' for '" + nomeBase + operador + campo + "'");
+                        return "unknown";
+                    }   tipoAtual = tipoCampo;
+                    break;
+                default:
+                    break OUTER;
             }
         }
 
         return tipoAtual;
     }
 
+    // <chamada_funcao> ::= IDENTIFIER LPAREN [ <argumentos> ] RPAREN
+    @Override
     protected void chamada_funcao() throws IOException {
         String nomeFuncao = tokenAtual.getValor();
         avancar();
@@ -839,25 +891,31 @@ public class Parser {
         }
     }
 
-    private void verificarCompatibilidadeTipos(String tipoEsperado, String tipoRecebido, String contexto) {
+    @Override
+    protected void verificarCompatibilidadeTipos(String tipoEsperado, String tipoRecebido, String contexto) {
         if (!tipoEsperado.equals(tipoRecebido)) {
             erroSemantico("Type mismatch in " + contexto
                     + ". Expected: " + tipoEsperado + ", got: " + tipoRecebido);
         }
     }
 
-    private void verificarCondicao(String tipo) {
+    @Override
+    protected void verificarCondicao(String tipo) {
         if (!tipo.equals("bool") && !tipo.equals("int")) {
             erroSemantico("Condition must be boolean or numeric. Got: " + tipo);
         }
     }
 
+    // <argumentos> ::= <expressao> { COMMA <expressao> }*
+    @Override
     protected void argumentos() throws IOException {
         do {
             expressao();
         } while (consumir("COMMA"));
     }
 
+    // <bloco> ::= LBRACE { <comando> }* RBRACE
+    @Override
     protected void bloco() throws IOException {
         if (!consumir("LBRACE")) {
             erro("Expected '{' to start block");
@@ -876,10 +934,14 @@ public class Parser {
         escopos.fecharEscopo();
     }
 
+    // <op_relacional> ::= EQUAL | NOT_EQUAL | LESS | GREATER | LESS_EQUAL | GREATER_EQUAL
+    @Override
     protected boolean eOperadorRelacional() {
         return tokenAtual.getTipo().matches("EQUAL|NOT_EQUAL|LESS|GREATER|LESS_EQUAL|GREATER_EQUAL");
     }
 
+    // <termo> ::= <fator> { (MULTIPLY | DIVIDE) <fator> }*
+    @Override
     protected void termo() throws IOException {
         fator();
         while (tokenAtual.getTipo().equals("MULTIPLY") || tokenAtual.getTipo().equals("DIVIDE")) {
@@ -888,6 +950,8 @@ public class Parser {
         }
     }
 
+    // <atribuicao_sem_ponto_e_virgula> ::= IDENTIFIER ( <op_atribuicao> <expressao> | INCREMENT | DECREMENT )
+    @Override
     protected void atribuicao_sem_ponto_e_virgula() throws IOException {
         consumir("IDENTIFIER");
 
@@ -902,6 +966,8 @@ public class Parser {
         }
     }
 
+    // <fator> ::= <elemento> [ LBRACKET <expressao> RBRACKET ]
+    @Override
     protected void fator() throws IOException {
         elemento();
 
@@ -914,6 +980,8 @@ public class Parser {
         }
     }
 
+    // <elemento> ::= (MULTIPLY | BITWISE_AND | NOT | MINUS) <elemento> | <chamada_funcao> | IDENTIFIER { (DOT | ARROW) IDENTIFIER }* | NUMBER | NUMBER_FLOAT | CHAR | STRING | LPAREN <expressao> RPAREN | (INCREMENT | DECREMENT) IDENTIFIER
+    @Override
     protected void elemento() throws IOException {
         if (consumir("MULTIPLY") || consumir("BITWISE_AND") || consumir("NOT") || consumir("MINUS")
                 || consumir("INCREMENT") || consumir("DECREMENT")) {
@@ -974,16 +1042,20 @@ public class Parser {
         }
     }
 
+    // <ponteiro> ::= { MULTIPLY }*
+    @Override
     protected void ponteiro() throws IOException {
         while (consumir("MULTIPLY")) {
         }
     }
 
-    private String verificarExpressao() throws IOException {
+    @Override
+    protected String verificarExpressao() throws IOException {
         return verificarExpressaoTernaria();
     }
 
-    private String verificarExpressaoTernaria() throws IOException {
+    @Override
+    protected String verificarExpressaoTernaria() throws IOException {
         String tipo = verificarExpressaoLogica();
 
         if (consumir("QUESTION")) {
@@ -1001,7 +1073,8 @@ public class Parser {
         return tipo;
     }
 
-    private String verificarExpressaoLogica() throws IOException {
+    @Override
+    protected String verificarExpressaoLogica() throws IOException {
         String tipo = verificarExpressaoRelacional();
 
         while (tokenAtual.getTipo().equals("AND") || tokenAtual.getTipo().equals("OR")) {
@@ -1016,7 +1089,8 @@ public class Parser {
         return tipo;
     }
 
-    private String verificarExpressaoRelacional() throws IOException {
+    @Override
+    protected String verificarExpressaoRelacional() throws IOException {
         String tipo = verificarExpressaoAritmetica();
 
         if (eOperadorRelacional()) {
@@ -1035,7 +1109,8 @@ public class Parser {
         return tipo.equals("int");
     }
 
-    private String verificarExpressaoAritmetica() throws IOException {
+    @Override
+    protected String verificarExpressaoAritmetica() throws IOException {
         String tipo = verificarTermo();
 
         while (tokenAtual.getTipo().equals("PLUS") || tokenAtual.getTipo().equals("MINUS")) {
@@ -1051,7 +1126,8 @@ public class Parser {
         return tipo;
     }
 
-    private String verificarTermo() throws IOException {
+    @Override
+    protected String verificarTermo() throws IOException {
         String tipo = verificarFator();
 
         while (tokenAtual.getTipo().equals("MULTIPLY") || tokenAtual.getTipo().equals("DIVIDE")) {
@@ -1066,7 +1142,8 @@ public class Parser {
         return tipo;
     }
 
-    private String verificarFator() throws IOException {
+    @Override
+    protected String verificarFator() throws IOException {
         String tipo = verificarElemento();
 
         if (tokenAtual.getTipo().equals("LBRACKET")) {
@@ -1086,7 +1163,8 @@ public class Parser {
         return tipo;
     }
 
-    private String verificarElemento() throws IOException {
+    @Override
+    protected String verificarElemento() throws IOException {
         if (consumir("MULTIPLY") || consumir("BITWISE_AND") || consumir("NOT") || consumir("MINUS")
                 || consumir("INCREMENT") || consumir("DECREMENT")) {
             String operador = tokens.get(pos - 1).getTipo();
@@ -1252,11 +1330,13 @@ public class Parser {
         }
     }
 
-    private boolean ehTipoNumerico(String tipo) {
+    @Override
+    protected boolean ehTipoNumerico(String tipo) {
         return tipo.matches("char|short|int|long|float|double");
     }
 
-    private boolean ehTipoValido(String tipo) {
+    @Override
+    protected boolean ehTipoValido(String tipo) {
         if (tipo.matches("void|char|short|int|long|float|double|signed|unsigned"
                 + "|unsigned int|unsigned char|unsigned short|unsigned long"
                 + "|signed int|signed char|signed short int|signed long|number")) {
@@ -1273,7 +1353,8 @@ public class Parser {
         return false;
     }
 
-    private boolean tiposCompativeis(String tipo1, String tipo2) {
+    @Override
+    protected boolean tiposCompativeis(String tipo1, String tipo2) {
         if (tipo1.equals(tipo2)) {
             return true;
         }
@@ -1292,7 +1373,8 @@ public class Parser {
         return false;
     }
 
-    private String determinarTipoResultante(String tipo1, String tipo2) {
+    @Override
+    protected String determinarTipoResultante(String tipo1, String tipo2) {
         if (tipo1.equals("double") || tipo2.equals("double")) {
             return "double";
         }
@@ -1305,14 +1387,16 @@ public class Parser {
         return "int";
     }
 
-    private String obterTipoBaseArray(String tipo) {
+    @Override
+    protected String obterTipoBaseArray(String tipo) {
         if (tipo.contains("[")) {
             return tipo.substring(0, tipo.indexOf('['));
         }
         return tipo;
     }
 
-    private String obterTipoBasePonteiro(String tipo) {
+    @Override
+    protected String obterTipoBasePonteiro(String tipo) {
         if (tipo.endsWith("*")) {
             return tipo.substring(0, tipo.length() - 1);
         }
